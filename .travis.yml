@@ -1,0 +1,16 @@
+dist: xenial
+install:
+- rm -r /home/travis/.gimme/versions/go1.7.4.linux.amd64
+- wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
+- tar -xf go1.8.linux-amd64.tar.gz
+- sudo mv go /usr/local
+- mkdir -p $HOME/go/src
+- export GOROOT=/usr/local/go
+- export PATH=$PATH:$GOROOT/bin
+- export GOPATH=$HOME/go
+script:
+- cd client
+- go version
+- go get ./...
+- go build
+- go test
