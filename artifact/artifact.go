@@ -9,7 +9,11 @@
 package artifact
 
 import (
+	"bytes"
+	"errors"
 	"io"
+
+	"golang.org/x/crypto/sha3"
 )
 
 // A simple interface for reading artifacts.
@@ -63,4 +67,22 @@ func New(reader io.Reader, checksum [32]byte, size uint32) Artifact {
 		size,
 		reader,
 	}
+}
+
+// Create an artifact from a byte slice.
+func FromBytes(data []byte) Artifact {
+	return New(bytes.NewReader(data), sha3.Sum256(data), uint32(len(data)))
+}
+
+// Create a byte slice from an artifact.
+func ToBytes(artifact Artifact) ([]byte, error) {
+	data := make([]byte, artifact.Size())
+	_, err := io.ReadFull(artifact, data)
+	if err != nil {
+		return nil, err
+	}
+	if sha3.Sum256(data) != artifact.Checksum() {
+		return nil, errors.New("Cannot verify checksum of artifact")
+	}
+	return data, nil
 }
