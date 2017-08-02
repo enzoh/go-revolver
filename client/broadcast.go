@@ -23,18 +23,17 @@ import (
 func (client *client) activateBroadcast() func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct {}, 1)
+	notify := make(chan struct{}, 1)
 	shutdown := func() {
-		notify <-struct {}{}
+		notify <- struct{}{}
 	}
 
 	// Broadcast artifacts from the send queue.
 	go func() {
-		Broadcast:
 		for {
 			select {
 			case <-notify:
-				break Broadcast
+				return
 			case data := <-client.send:
 				checksum := sha3.Sum256(data)
 				size := uint32(len(data))
@@ -63,22 +62,22 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	metadata := append(checksum[:], size[:]...)
 
 	// Calculate the number of chunks to transfer.
-	chunks := int((artifact.Size() + client.config.ArtifactChunkSize - 1) /
+	chunks := int((artifact.Size()+client.config.ArtifactChunkSize-1)/
 		client.config.ArtifactChunkSize + 1)
 
 	// Send the artifact metadata to those who have not seen it.
 	errors := make([]map[peer.ID]chan error, chunks)
 	errors[0] = client.streamstore.Apply(
-	func(peerId peer.ID, writer io.Writer) error {
-		if client.witness(peerId, checksum) {
-			return escape
-		}
-		return util.WriteWithTimeout(
-			writer,
-			metadata,
-			client.config.Timeout,
-		)
-	})
+		func(peerId peer.ID, writer io.Writer) error {
+			if client.witness(peerId, checksum) {
+				return escape
+			}
+			return util.WriteWithTimeout(
+				writer,
+				metadata,
+				client.config.Timeout,
+			)
+		})
 
 	// Send the artifact in chunks.
 	leftover := artifact.Size()
@@ -96,28 +95,28 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 		_, err := io.ReadFull(artifact, data)
 		if err != nil {
 			client.logger.Warning("Cannot read artifact")
-			artifact.Closer() <-1
+			artifact.Closer() <- 1
 			return
 		}
 
 		// Send the chunk to those who received the previous chunk.
 		previous := errors[i-1]
 		errors[i] = client.streamstore.Apply(
-		func(peerId peer.ID, writer io.Writer) error {
-			result, exists := previous[peerId]
-			if exists {
-				err := <-result
-				if err != nil {
-					return err
+			func(peerId peer.ID, writer io.Writer) error {
+				result, exists := previous[peerId]
+				if exists {
+					err := <-result
+					if err != nil {
+						return err
+					}
+					return util.WriteWithTimeout(
+						writer,
+						data,
+						client.config.Timeout,
+					)
 				}
-				return util.WriteWithTimeout(
-					writer,
-					data,
-					client.config.Timeout,
-				)
-			}
-			return nil
-		})
+				return nil
+			})
 
 	}
 
@@ -134,12 +133,12 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	}
 
 	// Close the reader.
-	artifact.Closer() <-0
+	artifact.Closer() <- 0
 
 }
 
 // Check if a peer has received an artifact.
-func (client * client) witness(peerId peer.ID, checksum [32]byte) bool {
+func (client *client) witness(peerId peer.ID, checksum [32]byte) bool {
 	witnesses, exists := client.witnesses.Get(checksum)
 	if exists {
 		for _, id := range witnesses.([]peer.ID) {
