@@ -1,0 +1,9 @@
+site_name: go-dfinity-p2p
+site_url: https://github.com/dfinity/go-dfinity-p2p
+site_description: A decentralized peer-to-peer broadcast network.
+site_author: Enzo Haussecker
+
+repo_url: https://github.com/dfinity/go-dfinity-p2p
+
+pages:
+- Home: READEME.md
