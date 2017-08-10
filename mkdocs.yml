@@ -6,4 +6,4 @@ site_author: Enzo Haussecker
 repo_url: https://github.com/dfinity/go-dfinity-p2p
 
 pages:
-- Home: READEME.md
+- Home: README.md
