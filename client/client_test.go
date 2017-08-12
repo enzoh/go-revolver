@@ -19,7 +19,7 @@ func newTestClient(test *testing.T, port uint16) (*client, func()) {
 
 	// Create a random seed.
 	seed := make([]byte, 32)
-	_ ,err := rand.Read(seed)
+	_, err := rand.Read(seed)
 	if err != nil {
 		test.Fatal(err)
 	}

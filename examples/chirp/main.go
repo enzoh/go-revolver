@@ -9,8 +9,8 @@
 package main
 
 import (
-	"database/sql"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -24,35 +24,35 @@ import (
 	"syscall"
 
 	"github.com/dfinity/go-dfinity-p2p/client"
-	_ "github.com/lib/pq"
 	"github.com/gorilla/websocket"
+	_ "github.com/lib/pq"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/whyrusleeping/go-logging"
 )
 
 type Chirp struct {
-	Data string
-	Nonce int
+	Data     string
+	Nonce    int
 	Username string
 }
 
 func main() {
 
 	// Parse command-line arguments.
-	argDBHost      := flag.String("db-host", "127.0.0.1", "IP address or hostname of the database server.")
-	argDBName      := flag.String("db-name", "chirp", "Name of the database to connect to.")
-	argDBPassword  := flag.String("db-password", "chirp", "Password for accessing the database.")
-	argDBPort      := flag.Uint64("db-port", 5432, "Port that the database server listens on.")
-	argDBUsername  := flag.String("db-username", "chirp", "Username for accessing the database.")
-	argDisableNAT  := flag.Bool("disable-nat", false, "Disable port-mapping in NAT devices?")
-	argDisableUI   := flag.Bool("disable-ui", false, "Disable the UI server?")
-	argEnableDB    := flag.Bool("enable-db", false, "Enable database for history retention?")
-	argIndex       := flag.String("index", "", "Path to index page.")
-	argLogLevel    := flag.String("log-level", "INFO", "Log level.")
-	argPort        := flag.Int("port", 0, "Port that the p2p client listens on.")
-	argRandomSeed  := flag.String("random-seed", "", "32-byte hex-encoded random seed.")
+	argDBHost := flag.String("db-host", "127.0.0.1", "IP address or hostname of the database server.")
+	argDBName := flag.String("db-name", "chirp", "Name of the database to connect to.")
+	argDBPassword := flag.String("db-password", "chirp", "Password for accessing the database.")
+	argDBPort := flag.Uint64("db-port", 5432, "Port that the database server listens on.")
+	argDBUsername := flag.String("db-username", "chirp", "Username for accessing the database.")
+	argDisableNAT := flag.Bool("disable-nat", false, "Disable port-mapping in NAT devices?")
+	argDisableUI := flag.Bool("disable-ui", false, "Disable the UI server?")
+	argEnableDB := flag.Bool("enable-db", false, "Enable database for history retention?")
+	argIndex := flag.String("index", "", "Path to index page.")
+	argLogLevel := flag.String("log-level", "INFO", "Log level.")
+	argPort := flag.Int("port", 0, "Port that the p2p client listens on.")
+	argRandomSeed := flag.String("random-seed", "", "32-byte hex-encoded random seed.")
 	argSeedAddress := flag.String("seed-address", "", "Address of seed node.")
-	argUIPort         := flag.Int("ui-port", 3000, "Port that the UI server listens on.")
+	argUIPort := flag.Int("ui-port", 3000, "Port that the UI server listens on.")
 	flag.Parse()
 
 	// Create a logger.
@@ -180,7 +180,7 @@ func main() {
 					continue
 				}
 				logger.Debugf("Receiving chirp: %#v", chirp)
-				client.Send() <-data
+				client.Send() <- data
 			}
 		}()
 
@@ -211,7 +211,7 @@ func main() {
 			err := http.ListenAndServe(fmt.Sprintf(":%d", *argUIPort), nil)
 			if err != nil {
 				logger.Critical("Cannot start user interface", err)
-				wait <-syscall.SIGTERM
+				wait <- syscall.SIGTERM
 			}
 		}()
 
@@ -245,7 +245,7 @@ func ws(client p2p.Client, counter int, lock *sync.Mutex, logger *logging.Logger
 			return
 		}
 
-		if req.Header.Get("Origin") != "http://" + req.Host {
+		if req.Header.Get("Origin") != "http://"+req.Host {
 			http.Error(resp, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -257,11 +257,11 @@ func ws(client p2p.Client, counter int, lock *sync.Mutex, logger *logging.Logger
 		}
 
 		counter++
-		notify := make(chan struct {}, 1)
+		notify := make(chan struct{}, 1)
 
 		go func() {
 
-			Sender:
+		Sender:
 			for {
 				chirp := Chirp{}
 				err := conn.ReadJSON(&chirp)
@@ -275,16 +275,16 @@ func ws(client p2p.Client, counter int, lock *sync.Mutex, logger *logging.Logger
 					logger.Warning("Cannot encode chirp", err)
 					break Sender
 				}
-				client.Send() <-data
+				client.Send() <- data
 			}
 
-			notify <-struct {}{}
+			notify <- struct{}{}
 
 		}()
 
 		go func() {
 
-			Receiver:
+		Receiver:
 			for {
 				select {
 				case <-notify:
@@ -302,7 +302,7 @@ func ws(client p2p.Client, counter int, lock *sync.Mutex, logger *logging.Logger
 						logger.Debug("Cannot write chirp", err)
 						break Receiver
 					}
-					client.Send() <-data
+					client.Send() <- data
 				}
 			}
 

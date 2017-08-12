@@ -20,23 +20,23 @@ import (
 func (client *client) discoverPeers() func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct {}, 1)
+	notify := make(chan struct{}, 1)
 	shutdown := func() {
-		notify <-struct {}{}
+		notify <- struct{}{}
 	}
 
 	// Replenish the routing table.
 	go func() {
 		rate := math.Log(120) / 30
 		then := time.Now()
-		Discovery:
+	Discovery:
 		for {
 			select {
 			case <-notify:
 				break Discovery
 			default:
-				if time.Since(then) < 30 * time.Second {
-					time.Sleep(time.Second * time.Duration(math.Exp(rate * time.Since(then).Seconds())))
+				if time.Since(then) < 30*time.Second {
+					time.Sleep(time.Second * time.Duration(math.Exp(rate*time.Since(then).Seconds())))
 				} else {
 					time.Sleep(120 * time.Second)
 				}

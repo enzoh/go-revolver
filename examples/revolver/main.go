@@ -169,7 +169,7 @@ func send(client p2p.Client, logger *logging.Logger) {
 			len(data),
 			hex.EncodeToString(hash[:4]),
 		)
-		client.Send() <-data
+		client.Send() <- data
 
 	}
 
@@ -196,7 +196,7 @@ func receive(client p2p.Client, logger *logging.Logger) {
 		)
 
 		// Broadcast the artifact.
-		client.Send() <-data
+		client.Send() <- data
 
 	}
 

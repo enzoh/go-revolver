@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-swarm"
+	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/multiformats/go-multiaddr"
 )
 

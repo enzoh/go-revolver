@@ -11,8 +11,8 @@ package p2p
 import (
 	"time"
 
-	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -20,9 +20,9 @@ import (
 func (client *client) newNATMonitor(listener multiaddr.Multiaddr, manager basichost.NATManager) func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct {}, 1)
+	notify := make(chan struct{}, 1)
 	shutdown := func() {
-		notify <-struct {}{}
+		notify <- struct{}{}
 	}
 
 	go func(listener multiaddr.Multiaddr, manager basichost.NATManager) {
@@ -30,9 +30,9 @@ func (client *client) newNATMonitor(listener multiaddr.Multiaddr, manager basich
 		case <-time.After(client.config.NATMonitorTimeout):
 			client.logger.Warning("Failed to locate NAT device")
 		case <-manager.Ready():
-			nat  := manager.NAT()
+			nat := manager.NAT()
 			addr := listener
-			NATMonitor:
+		NATMonitor:
 			for {
 				select {
 				case <-notify:

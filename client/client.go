@@ -19,81 +19,81 @@ import (
 
 	"github.com/dfinity/go-dfinity-p2p/streamstore"
 	"github.com/hashicorp/golang-lru"
-	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-kbucket/keyspace"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-protocol"
+	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/whyrusleeping/go-logging"
 )
 
 type Config struct {
-	ArtifactCacheSize int
-	ArtifactChunkSize uint32
-	ArtifactMaxBufferSize uint32
-	ArtifactQueueSize int
-	DisableBroadcast bool
-	DisableNATPortMap bool
-	DisablePeerDiscovery bool
-	DisableStreamDiscovery bool
-	EnableNetworkAnalyzer bool
-	KBucketSize int
-	LatencyTolerance time.Duration
-	ListenIP string
-	ListenPort uint16
-	LogLevel logging.Level
+	ArtifactCacheSize           int
+	ArtifactChunkSize           uint32
+	ArtifactMaxBufferSize       uint32
+	ArtifactQueueSize           int
+	DisableBroadcast            bool
+	DisableNATPortMap           bool
+	DisablePeerDiscovery        bool
+	DisableStreamDiscovery      bool
+	EnableNetworkAnalyzer       bool
+	KBucketSize                 int
+	LatencyTolerance            time.Duration
+	ListenIP                    string
+	ListenPort                  uint16
+	LogLevel                    logging.Level
 	NATMonitorIterationInterval time.Duration
-	NATMonitorTimeout time.Duration
-	Network protocol.ID
-	NetworkAnalyzerListenIP string
-	NetworkAnalyzerListenPort uint16
-	PingBufferSize uint32
-	RandomSeed string
-	SampleMaxBufferSize uint32
-	SampleSize int
-	SeedNodes []multiaddr.Multiaddr
-	StreamstoreCapacity int
-	StreamstoreQueueSize int
-	Timeout time.Duration
-	Version protocol.ID
-	WitnessCacheSize int
+	NATMonitorTimeout           time.Duration
+	Network                     protocol.ID
+	NetworkAnalyzerListenIP     string
+	NetworkAnalyzerListenPort   uint16
+	PingBufferSize              uint32
+	RandomSeed                  string
+	SampleMaxBufferSize         uint32
+	SampleSize                  int
+	SeedNodes                   []multiaddr.Multiaddr
+	StreamstoreCapacity         int
+	StreamstoreQueueSize        int
+	Timeout                     time.Duration
+	Version                     protocol.ID
+	WitnessCacheSize            int
 }
 
 // Get the default configuration parameters of the client.
 func DefaultConfig() (*Config, error) {
 	return &Config{
-		ArtifactCacheSize: 8192,
-		ArtifactChunkSize: 1048576,
-		ArtifactMaxBufferSize: 16777216,
-		ArtifactQueueSize: 1024,
-		DisableBroadcast: false,
-		DisableNATPortMap: false,
-		DisablePeerDiscovery: false,
-		DisableStreamDiscovery: false,
-		EnableNetworkAnalyzer: false,
-		KBucketSize: 8,
-		LatencyTolerance: time.Second,
-		ListenIP: "0.0.0.0",
-		ListenPort: 4000,
-		LogLevel: logging.DEBUG,
+		ArtifactCacheSize:           8192,
+		ArtifactChunkSize:           1048576,
+		ArtifactMaxBufferSize:       16777216,
+		ArtifactQueueSize:           1024,
+		DisableBroadcast:            false,
+		DisableNATPortMap:           false,
+		DisablePeerDiscovery:        false,
+		DisableStreamDiscovery:      false,
+		EnableNetworkAnalyzer:       false,
+		KBucketSize:                 8,
+		LatencyTolerance:            time.Second,
+		ListenIP:                    "0.0.0.0",
+		ListenPort:                  4000,
+		LogLevel:                    logging.DEBUG,
 		NATMonitorIterationInterval: time.Second,
-		NATMonitorTimeout: time.Minute,
-		Network: "DFINITY",
-		NetworkAnalyzerListenIP: "127.0.0.1",
-		NetworkAnalyzerListenPort: 8000,
-		PingBufferSize: 32,
-		RandomSeed: "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
-		SampleMaxBufferSize: 8192,
-		SampleSize: 4,
-		SeedNodes: nil,
-		StreamstoreCapacity: 8,
-		StreamstoreQueueSize: 4096,
-		Timeout: peerstore.TempAddrTTL,
-		Version: "0.0.1",
-		WitnessCacheSize: 1024,
+		NATMonitorTimeout:           time.Minute,
+		Network:                     "DFINITY",
+		NetworkAnalyzerListenIP:     "127.0.0.1",
+		NetworkAnalyzerListenPort:   8000,
+		PingBufferSize:              32,
+		RandomSeed:                  "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		SampleMaxBufferSize:         8192,
+		SampleSize:                  4,
+		SeedNodes:                   nil,
+		StreamstoreCapacity:         8,
+		StreamstoreQueueSize:        4096,
+		Timeout:                     peerstore.TempAddrTTL,
+		Version:                     "0.0.1",
+		WitnessCacheSize:            1024,
 	}, nil
 }
 
@@ -116,25 +116,24 @@ type Client interface {
 
 	// Get the stream count of a client.
 	StreamCount() int
-
 }
 
 type client struct {
-	artifacts *lru.Cache
+	artifacts     *lru.Cache
 	artifactsLock *sync.Mutex
-	config *Config
-	context context.Context
-	host *basichost.BasicHost
-	id peer.ID
-	key keyspace.Key
-	logger *logging.Logger
-	peerstore peerstore.Peerstore
-	protocol protocol.ID
-	receive chan []byte
-	send chan []byte
-	streamstore streamstore.Streamstore
-	table *kbucket.RoutingTable
-	witnesses *lru.Cache 
+	config        *Config
+	context       context.Context
+	host          *basichost.BasicHost
+	id            peer.ID
+	key           keyspace.Key
+	logger        *logging.Logger
+	peerstore     peerstore.Peerstore
+	protocol      protocol.ID
+	receive       chan []byte
+	send          chan []byte
+	streamstore   streamstore.Streamstore
+	table         *kbucket.RoutingTable
+	witnesses     *lru.Cache
 }
 
 // Get the addresses of a client.

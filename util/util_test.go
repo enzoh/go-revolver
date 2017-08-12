@@ -35,7 +35,7 @@ func TestReadWriteWithTimeout(test *testing.T) {
 	}
 	if !bytes.Equal(input, output) {
 		test.Fatal("Corrupt data!")
-	}	
+	}
 }
 
 // Show that an unsigned 32-bit integer can be encoded and decoded using big-

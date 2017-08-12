@@ -23,7 +23,7 @@ func (client *client) process(stream net.Stream) {
 
 	pid := stream.Conn().RemotePeer()
 
-	Processing:
+Processing:
 	for {
 
 		// Get the checksum of the artifact.
@@ -98,7 +98,7 @@ func (client *client) process(stream net.Stream) {
 		client.artifactsLock.Unlock()
 
 		// Queue the artifact.
-		client.receive <-data
+		client.receive <- data
 
 	}
 

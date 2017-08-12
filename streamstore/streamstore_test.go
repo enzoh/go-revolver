@@ -16,12 +16,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-swarm"
+	"github.com/libp2p/go-libp2p/p2p/host/basic"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/whyrusleeping/go-logging"
 )
@@ -29,12 +29,12 @@ import (
 const QUEUE_SIZE = 10
 
 type client struct {
-	address multiaddr.Multiaddr
-	ctx context.Context
-	host *basichost.BasicHost
-	id peer.ID
-	peerstore peerstore.Peerstore
-	queue chan [32]byte
+	address     multiaddr.Multiaddr
+	ctx         context.Context
+	host        *basichost.BasicHost
+	id          peer.ID
+	peerstore   peerstore.Peerstore
+	queue       chan [32]byte
 	streamstore Streamstore
 }
 
@@ -117,7 +117,7 @@ func (client *client) read(stream net.Stream) {
 			break
 		}
 		select {
-		case client.queue <-artifact:
+		case client.queue <- artifact:
 		default:
 		}
 	}
@@ -170,10 +170,10 @@ func TestStreamstore(test *testing.T) {
 	for i := range artifacts {
 		artifact := artifacts[i]
 		errors[i] = client1.streamstore.Apply(
-		func(pid peer.ID, writer io.Writer) error {
-			_, err := writer.Write(artifact[:])
-			return err
-		})
+			func(pid peer.ID, writer io.Writer) error {
+				_, err := writer.Write(artifact[:])
+				return err
+			})
 	}
 
 	// Verify that the artifacts were sent to the target peer.

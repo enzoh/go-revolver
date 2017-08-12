@@ -29,14 +29,13 @@ type Artifact interface {
 	Size() uint32
 
 	io.Reader
-
 }
 
 type artifact struct {
 	checksum [32]byte
-	closer chan int
-	size uint32
-	reader io.Reader
+	closer   chan int
+	size     uint32
+	reader   io.Reader
 }
 
 // Get the checksum of an artifact.

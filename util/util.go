@@ -22,14 +22,14 @@ func WriteWithTimeout(writer io.Writer, data []byte, timeout time.Duration) erro
 	result := make(chan error, 1)
 	go func(writer io.Writer, data []byte) {
 		_, err := writer.Write(data)
-		result <-err
+		result <- err
 	}(writer, data)
 	select {
 	case err := <-result:
 		return err
 	case <-time.After(timeout):
 		select {
-		case result <-errors.New("Timeout!"):
+		case result <- errors.New("Timeout!"):
 		default:
 		}
 		err := <-result
@@ -43,14 +43,14 @@ func ReadWithTimeout(reader io.Reader, n uint32, timeout time.Duration) ([]byte,
 	result := make(chan error, 1)
 	go func(reader io.Reader) {
 		_, err := io.ReadFull(reader, data)
-		result <-err
+		result <- err
 	}(reader)
 	select {
 	case err := <-result:
 		return data, err
 	case <-time.After(timeout):
 		select {
-		case result <-errors.New("Timeout!"):
+		case result <- errors.New("Timeout!"):
 		default:
 		}
 		err := <-result

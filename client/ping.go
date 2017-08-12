@@ -30,7 +30,7 @@ func (client *client) ping(peerId peer.ID) error {
 	stream, err := client.host.NewStream(
 		client.context,
 		pid,
-		client.protocol + "/ping",
+		client.protocol+"/ping",
 	)
 	if err != nil {
 		addrs := client.peerstore.PeerInfo(pid).Addrs
