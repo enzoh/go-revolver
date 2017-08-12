@@ -29,6 +29,7 @@ func newTestClient(test *testing.T, port uint16) (*client, func()) {
 	if err != nil {
 		test.Fatal(err)
 	}
+	config.DisableAnalytics = true
 	config.DisableNATPortMap = true
 	config.DisablePeerDiscovery = true
 	config.DisableStreamDiscovery = true

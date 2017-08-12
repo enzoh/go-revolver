@@ -31,15 +31,17 @@ import (
 )
 
 type Config struct {
+	AnalyticsIterationInterval  time.Duration
+	AnalyticsURL                string
 	ArtifactCacheSize           int
 	ArtifactChunkSize           uint32
 	ArtifactMaxBufferSize       uint32
 	ArtifactQueueSize           int
+	DisableAnalytics            bool
 	DisableBroadcast            bool
 	DisableNATPortMap           bool
 	DisablePeerDiscovery        bool
 	DisableStreamDiscovery      bool
-	EnableNetworkAnalyzer       bool
 	KBucketSize                 int
 	LatencyTolerance            time.Duration
 	ListenIP                    string
@@ -48,8 +50,6 @@ type Config struct {
 	NATMonitorIterationInterval time.Duration
 	NATMonitorTimeout           time.Duration
 	Network                     protocol.ID
-	NetworkAnalyzerListenIP     string
-	NetworkAnalyzerListenPort   uint16
 	PingBufferSize              uint32
 	RandomSeed                  string
 	SampleMaxBufferSize         uint32
@@ -65,25 +65,25 @@ type Config struct {
 // Get the default configuration parameters of the client.
 func DefaultConfig() (*Config, error) {
 	return &Config{
+		AnalyticsIterationInterval:  time.Minute,
+		AnalyticsURL:                "https://analytics.dfinity.build/report",
 		ArtifactCacheSize:           8192,
 		ArtifactChunkSize:           1048576,
 		ArtifactMaxBufferSize:       16777216,
 		ArtifactQueueSize:           1024,
+		DisableAnalytics:            false,
 		DisableBroadcast:            false,
 		DisableNATPortMap:           false,
 		DisablePeerDiscovery:        false,
 		DisableStreamDiscovery:      false,
-		EnableNetworkAnalyzer:       false,
 		KBucketSize:                 8,
-		LatencyTolerance:            time.Second,
+		LatencyTolerance:            time.Minute,
 		ListenIP:                    "0.0.0.0",
 		ListenPort:                  4000,
 		LogLevel:                    logging.DEBUG,
 		NATMonitorIterationInterval: time.Second,
 		NATMonitorTimeout:           time.Minute,
 		Network:                     "DFINITY",
-		NetworkAnalyzerListenIP:     "127.0.0.1",
-		NetworkAnalyzerListenPort:   8000,
 		PingBufferSize:              32,
 		RandomSeed:                  "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 		SampleMaxBufferSize:         8192,
