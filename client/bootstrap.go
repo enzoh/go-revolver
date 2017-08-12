@@ -98,12 +98,6 @@ func (client *client) bootstrap() (func(), error) {
 	client.registerPingService()
 	client.registerSampleService()
 
-	// Start the network analyzer.
-	shutdownNetworkAnalyzer := func() {}
-	if client.config.EnableNetworkAnalyzer {
-		// TODO: Implement network analyzer.
-	}
-
 	// Greet the seed nodes.
 	var group sync.WaitGroup
 	for _, address := range client.config.SeedNodes {
@@ -136,11 +130,17 @@ func (client *client) bootstrap() (func(), error) {
 		shutdownBroadcast = client.activateBroadcast()
 	}
 
+	// Share analytics with core developers.
+	shutdownAnalytics := func() {}
+	if !client.config.DisableAnalytics {
+		shutdownAnalytics = client.activateAnalytics()
+	}
+
 	// Create a shutdown function.
 	shutdown := func() {
+		shutdownAnalytics()
 		shutdownBroadcast()
 		shutdownNATMonitor()
-		shutdownNetworkAnalyzer()
 		shutdownPeerDiscovery()
 		shutdownStreamDiscovery()
 		client.host.Close()
