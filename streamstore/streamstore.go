@@ -41,25 +41,24 @@ type Streamstore interface {
 
 	// Calculate the size of a stream store.
 	Size() int
-
 }
 
 type streamstore struct {
-	capacity int
-	data map[peer.ID]peerctx
+	capacity    int
+	data        map[peer.ID]peerctx
 	txQueueSize int
 	*logging.Logger
 	*sync.Mutex
 }
 
 type peerctx struct {
-	notify chan struct {}
-	queue chan transaction
+	notify chan struct{}
+	queue  chan transaction
 	stream net.Stream
 }
 
 type transaction struct {
-	query func(peer.ID, io.Writer) error
+	query  func(peer.ID, io.Writer) error
 	result map[peer.ID]chan error
 	*sync.Mutex
 }
@@ -83,7 +82,7 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 	ctx, exists := ss.data[pid]
 	if exists {
 		ss.Debug("Removing", pid, "from stream store")
-		ctx.notify <-struct {}{}
+		ctx.notify <- struct{}{}
 		ctx.stream.Close()
 		delete(ss.data, pid)
 	} else if ss.Capacity() <= ss.Size() {
@@ -91,12 +90,12 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 		return false
 	}
 	ctx = peerctx{
-		make(chan struct {}, 1),
+		make(chan struct{}, 1),
 		make(chan transaction, ss.txQueueSize),
 		stream,
 	}
 	go func() {
-		Processing:
+	Processing:
 		for {
 			select {
 			case <-ctx.notify:
@@ -106,7 +105,7 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 				err := tx.query(pid, ctx.stream)
 				ss.Debug("Recording result for", pid)
 				tx.Lock()
-				tx.result[pid] <-err
+				tx.result[pid] <- err
 				tx.Unlock()
 			}
 		}
@@ -138,11 +137,11 @@ func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error) map[peer.ID]chan 
 			tx.Unlock()
 			ss.Debug("Queueing transaction for", pid)
 			select {
-			case ctx.queue <-tx:
+			case ctx.queue <- tx:
 			default:
 				ss.Debug("Cannot queue transaction for", pid)
 				tx.Lock()
-				tx.result[pid] <-errors.New("transaction queue is full")
+				tx.result[pid] <- errors.New("transaction queue is full")
 				tx.Unlock()
 			}
 		}()
@@ -176,7 +175,7 @@ func (ss *streamstore) Purge() {
 	for peerId, ctx := range ss.data {
 		pid := peerId
 		ss.Debug("Removing", pid, "from stream store")
-		ctx.notify <-struct {}{}
+		ctx.notify <- struct{}{}
 		ctx.stream.Close()
 		delete(ss.data, pid)
 	}
@@ -190,7 +189,7 @@ func (ss *streamstore) Remove(peerId peer.ID) {
 	ctx, exists := ss.data[pid]
 	if exists {
 		ss.Debug("Removing", pid, "from stream store")
-		ctx.notify <-struct {}{}
+		ctx.notify <- struct{}{}
 		ctx.stream.Close()
 		delete(ss.data, pid)
 	}

@@ -22,7 +22,7 @@ import (
 
 type Vertex struct {
 	Client string
-	Peers []string
+	Peers  []string
 }
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 		}
 	}()
 
-	sig := <- shutdown
+	sig := <-shutdown
 	log.Printf("Receiving termination signal %s ...\n", sig.String())
 
 }
@@ -74,22 +74,22 @@ func graph(dstore map[string][]string, lock *sync.Mutex) http.HandlerFunc {
 		lock.Lock()
 		defer lock.Unlock()
 
-		var nodes []map[string]interface {}
-		var links []map[string]interface {}
+		var nodes []map[string]interface{}
+		var links []map[string]interface{}
 
 		for client, peers := range dstore {
-			node := make(map[string]interface {})
+			node := make(map[string]interface{})
 			node["id"] = client
 			nodes = append(nodes, node)
 			for i := range peers {
-				link := make(map[string]interface {})
+				link := make(map[string]interface{})
 				link["source"] = client
 				link["target"] = peers[i]
 				links = append(links, link)
 			}
 		}
 
-		object := make(map[string]interface {})
+		object := make(map[string]interface{})
 		object["nodes"] = nodes
 		object["links"] = links
 

@@ -31,7 +31,7 @@ func (client *client) sample(peerId peer.ID) ([]peerstore.PeerInfo, error) {
 	stream, err := client.host.NewStream(
 		client.context,
 		pid,
-		client.protocol + "/sample",
+		client.protocol+"/sample",
 	)
 	if err != nil {
 		addrs := client.peerstore.PeerInfo(pid).Addrs
@@ -104,7 +104,7 @@ func (client *client) sampleHandler() net.StreamHandler {
 				break
 			}
 			n := float64(len(peers))
-			j := int(math.Floor(math.Exp(math.Log(n + 1) * rand.Float64()) - 1))
+			j := int(math.Floor(math.Exp(math.Log(n+1)*rand.Float64()) - 1))
 			info := client.peerstore.PeerInfo(peers[j])
 			if info.ID != client.id && info.ID != pid && len(info.Addrs) != 0 {
 				sample = append(sample, info)

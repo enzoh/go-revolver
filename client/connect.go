@@ -21,23 +21,23 @@ import (
 func (client *client) discoverStreams() func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct {}, 1)
+	notify := make(chan struct{}, 1)
 	shutdown := func() {
-		notify <-struct {}{}
+		notify <- struct{}{}
 	}
 
 	// Replenish the stream store.
 	go func() {
 		rate := math.Log(120) / 30
 		then := time.Now()
-		Discovery:
+	Discovery:
 		for {
 			select {
 			case <-notify:
 				break Discovery
 			default:
-				if time.Since(then) < 30 * time.Second {
-					time.Sleep(time.Second * time.Duration(math.Exp(rate * time.Since(then).Seconds())))
+				if time.Since(then) < 30*time.Second {
+					time.Sleep(time.Second * time.Duration(math.Exp(rate*time.Since(then).Seconds())))
 				} else {
 					time.Sleep(120 * time.Second)
 				}
@@ -81,7 +81,7 @@ func (client *client) replenishStreamstore() {
 				break
 			}
 			n := float64(len(delta))
-			j := int(math.Floor(math.Exp(math.Log(n + 1) * rand.Float64()) - 1))
+			j := int(math.Floor(math.Exp(math.Log(n+1)*rand.Float64()) - 1))
 			info := client.peerstore.PeerInfo(delta[j])
 			if info.ID != client.id && len(info.Addrs) != 0 {
 				candidates = append(candidates, delta[j])

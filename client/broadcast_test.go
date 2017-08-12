@@ -55,7 +55,7 @@ func TestBroadcast(test *testing.T) {
 		}
 
 		// Send the artifact to the second client.
-		client1.Send() <-data1
+		client1.Send() <- data1
 
 		select {
 

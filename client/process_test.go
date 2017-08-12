@@ -97,35 +97,35 @@ func TestDuplication(test *testing.T) {
 	}
 
 	// Create notifications to shutdown the artifact forwarding loops.
-	notify2 := make(chan struct {}, 1)
-	notify4 := make(chan struct {}, 1)
+	notify2 := make(chan struct{}, 1)
+	notify4 := make(chan struct{}, 1)
 	defer func() {
-		notify2 <-struct {}{}
-		notify4 <-struct {}{}
+		notify2 <- struct{}{}
+		notify4 <- struct{}{}
 	}()
 
 	// Forward artifacts from the first client to the third client.
 	go func() {
-		Forwarding:
+	Forwarding:
 		for {
 			select {
 			case <-notify2:
 				break Forwarding
 			case data := <-client2.Receive():
-				client2.Send() <-data
+				client2.Send() <- data
 			}
 		}
 	}()
 
 	// Forward artifacts from the first client to the third client.
 	go func() {
-		Forwarding:
+	Forwarding:
 		for {
 			select {
 			case <-notify4:
 				break Forwarding
 			case data := <-client4.Receive():
-				client4.Send() <-data
+				client4.Send() <- data
 			}
 		}
 	}()
@@ -136,12 +136,12 @@ func TestDuplication(test *testing.T) {
 			time.Sleep(25 * time.Microsecond)
 			data := make([]byte, 32)
 			rand.Read(data)
-			client1.Send() <-data
+			client1.Send() <- data
 		}
 	}()
 
 	// Receive artifacts from the second and fourth client.
-	cache := make(map[string]struct {})
+	cache := make(map[string]struct{})
 	for i := 0; i < N; i++ {
 
 		select {
@@ -155,7 +155,7 @@ func TestDuplication(test *testing.T) {
 			if exists {
 				test.Fatal("Duplicate artifact!")
 			}
-			cache[key] = struct {}{}
+			cache[key] = struct{}{}
 
 		case <-time.After(time.Second):
 			test.Fatal("Missing artifact!")

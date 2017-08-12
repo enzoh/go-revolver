@@ -33,7 +33,7 @@ func (client *client) pair(peerId peer.ID) (bool, error) {
 	stream, err := client.host.NewStream(
 		client.context,
 		pid,
-		client.protocol + "/pair",
+		client.protocol+"/pair",
 	)
 	if err != nil {
 		addrs := client.peerstore.PeerInfo(pid).Addrs
@@ -118,7 +118,7 @@ func (client *client) pairHandler() net.StreamHandler {
 					}
 				}
 
-				if len(peers) + 1 > targets[i] {
+				if len(peers)+1 > targets[i] {
 
 					// Sort the peers and select the overflow.
 					overflow := kbucket.SortClosestPeers(
