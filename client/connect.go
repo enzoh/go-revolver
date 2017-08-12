@@ -10,8 +10,10 @@ package p2p
 
 import (
 	"math"
+	"math/rand"
 	"time"
 
+	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 )
 
@@ -54,41 +56,76 @@ func (client *client) discoverStreams() func() {
 // Replenish the stream store.
 func (client *client) replenishStreamstore() {
 
-	// Calculate the targets.
-	targetL := client.streamstore.Capacity() / 2
-	targetR := client.streamstore.Capacity() - targetL
+	var candidates []peer.ID
+	var delta []peer.ID
+	var peers []peer.ID
 
-	// Identify candidates for pairing.
-	queueL, queueR := client.neighbors(client.table.ListPeers())
-	if len(queueL) > targetL {
-		queueL = queueL[:targetL]
-	}
-	if len(queueR) > targetR {
-		queueR = queueR[:targetR]
-	}
-	candidates := difference(
-		append(queueL, queueR...),
-		client.streamstore.Peers(),
-	)
+	buckets := client.table.Buckets
+	streams := client.streamstore.Peers()
+	targets := deal(client.streamstore.Capacity(), len(buckets))
 
-	// Pair with candidates.
+	for i := range buckets {
+
+		peers = buckets[i].Peers()
+		delta = kbucket.SortClosestPeers(
+			difference(peers, streams),
+			kbucket.ConvertPeerID(client.id),
+		)
+
+		s := len(streams) - len(difference(streams, peers))
+		t := targets[i]
+
+		// Select candidates from this bucket.
+		for len(delta) > 0 {
+			if s >= t {
+				break
+			}
+			n := float64(len(delta))
+			j := int(math.Floor(math.Exp(math.Log(n + 1) * rand.Float64()) - 1))
+			info := client.peerstore.PeerInfo(delta[j])
+			if info.ID != client.id && len(info.Addrs) != 0 {
+				candidates = append(candidates, delta[j])
+				t--
+			}
+			delta = append(delta[:j], delta[j+1:]...)
+		}
+
+	}
+
 	for i := range candidates {
 
 		if client.streamstore.Size() == client.streamstore.Capacity() {
 			break
 		}
 
-		info := client.peerstore.PeerInfo(candidates[i])
-		if len(info.Addrs) == 0 {
-			continue
-		}
-
-		_, err := client.pair(candidates[i])
-		if err != nil {
-			continue
-		}
+		// Request to exchange artifacts.
+		client.pair(candidates[i])
 
 	}
+
+}
+
+// Divide a by b and split the remainder.
+func deal(a, b int) []int {
+
+	if b < 1 {
+		return nil
+	}
+
+	q := a / b
+	r := a % b
+
+	result := make([]int, b)
+
+	for i := 0; i < b; i++ {
+		result[i] = q
+	}
+
+	for i := 0; i < r; i++ {
+		result[i]++
+	}
+
+	return result
 
 }
 

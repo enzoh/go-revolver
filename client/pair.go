@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	"github.com/dfinity/go-dfinity-p2p/util"
+	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 )
@@ -100,74 +101,72 @@ func (client *client) pairHandler() net.StreamHandler {
 			stream.Close()
 		}
 
-		// Calculate the targets.
-		targetL := client.streamstore.Capacity() / 2
-		targetR := client.streamstore.Capacity() - targetL
+		// Check if the peer is closer than others in its bucket.
+		buckets := client.table.Buckets
+		targets := deal(client.streamstore.Capacity(), len(buckets))
+		for i := range buckets {
 
-		// Identify candidates for pairing.
-		queueL, queueR := client.neighbors(client.table.ListPeers())
-		if len(queueL) > targetL {
-			queueL = queueL[:targetL]
-		}
-		if len(queueR) > targetR {
-			queueR = queueR[:targetR]
-		}
-		candidates := difference(
-			append(queueL, queueR...),
-			client.streamstore.Peers(),
-		)
+			if buckets[i].Has(pid) {
 
-		// Check if the peer is a neighbor.
-		neighbor := false
-		for i := range candidates {
-			if candidates[i] == pid {
-				neighbor = true
-				break
+				// Select peers from this bucket.
+				peers := client.streamstore.Peers()
+				for j := 0; j < len(peers); j++ {
+					if !buckets[i].Has(peers[j]) {
+						copy(peers[j:], peers[j+1:])
+						peers = peers[:len(peers)-1]
+						j--
+					}
+				}
+
+				if len(peers) + 1 > targets[i] {
+
+					// Sort the peers and select the overflow.
+					overflow := kbucket.SortClosestPeers(
+						append(peers, pid),
+						kbucket.ConvertPeerID(client.id),
+					)[targets[i]:]
+
+					// Check if the peer exists in the overflow.
+					for k := range overflow {
+						if overflow[k] == pid {
+							reject("closer peers exist in its bucket")
+							return
+						}
+					}
+
+					// Create space for the stream.
+					client.streamstore.Remove(overflow[len(overflow)-1])
+
+				}
+
+				// Add the stream to the stream store.
+				if !client.streamstore.Add(pid, stream) {
+					reject(pid, " cannot be added to the stream store")
+					return
+				}
+
+				// Send an acknowledgement.
+				err := util.WriteWithTimeout(
+					stream,
+					[]byte{ack},
+					client.config.Timeout,
+				)
+				if err != nil {
+					client.logger.Warning("Cannot send data to", pid, err)
+					client.streamstore.Remove(pid)
+					return
+				}
+
+				// Ready to exchange artifacts.
+				client.logger.Debug("Ready to exchange artifacts with", pid)
+				go client.process(stream)
+				return
+
 			}
-		}
-		if !neighbor {
-			reject(pid, " is not a neighbor")
-			return
+
 		}
 
-		// Create space for the stream.
-		trashL, trashR := client.neighbors(
-			append(client.streamstore.Peers(), pid),
-		)
-		if len(trashL) > targetL {
-			trashL = trashL[targetL:]
-			for i := range trashL {
-				client.streamstore.Remove(trashL[i])
-			}
-		}
-		if len(trashR) > targetR {
-			trashR = trashR[targetR:]
-			for i := range trashR {
-				client.streamstore.Remove(trashR[i])
-			}
-		}
-
-		// Check if the client can add the stream to the stream store.
-		if !client.streamstore.Add(pid, stream) {
-			reject(pid, " cannot be added to the stream store")
-			return
-		}
-
-		// Send an acknowledgement.
-		err := util.WriteWithTimeout(
-			stream,
-			[]byte{ack},
-			client.config.Timeout,
-		)
-		if err != nil {
-			client.logger.Warning("Cannot send data to", pid, err)
-			client.streamstore.Remove(pid)
-			return
-		}
-
-		// Ready to exchange artifacts.
-		client.logger.Debug("Ready to exchange artifacts with", pid)
-		go client.process(stream)
+		reject(pid, " does not exist in any bucket")
 
 	}
 
