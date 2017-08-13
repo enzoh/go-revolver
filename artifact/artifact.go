@@ -78,10 +78,13 @@ func ToBytes(artifact Artifact) ([]byte, error) {
 	data := make([]byte, artifact.Size())
 	_, err := io.ReadFull(artifact, data)
 	if err != nil {
+		artifact.Closer() <- 1
 		return nil, err
 	}
 	if sha3.Sum256(data) != artifact.Checksum() {
+		artifact.Closer() <- 1
 		return nil, errors.New("Cannot verify checksum of artifact")
 	}
+	artifact.Closer() <- 0
 	return data, nil
 }

@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/dfinity/go-dfinity-p2p/streamstore"
 	"github.com/hashicorp/golang-lru"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -109,10 +110,10 @@ type Client interface {
 	PeerCount() int
 
 	// Get the artifact receive queue of a client.
-	Receive() chan []byte
+	Receive() chan artifact.Artifact
 
 	// Get the artifact send queue of a client.
-	Send() chan []byte
+	Send() chan artifact.Artifact
 
 	// Get the stream count of a client.
 	StreamCount() int
@@ -129,11 +130,12 @@ type client struct {
 	logger        *logging.Logger
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
-	receive       chan []byte
-	send          chan []byte
+	receive       chan artifact.Artifact
+	send          chan artifact.Artifact
 	streamstore   streamstore.Streamstore
 	table         *kbucket.RoutingTable
 	witnesses     *lru.Cache
+	witnessesLock *sync.Mutex
 }
 
 // Get the addresses of a client.
@@ -152,12 +154,12 @@ func (client *client) PeerCount() int {
 }
 
 // Get the artifact receive queue of a client.
-func (client *client) Receive() chan []byte {
+func (client *client) Receive() chan artifact.Artifact {
 	return client.receive
 }
 
 // Get the artifact send queue of a client.
-func (client *client) Send() chan []byte {
+func (client *client) Send() chan artifact.Artifact {
 	return client.send
 }
 
@@ -282,8 +284,8 @@ func (config *Config) new() (*client, func(), error) {
 	)
 
 	// Create the artifact queues.
-	client.send = make(chan []byte, client.config.ArtifactQueueSize)
-	client.receive = make(chan []byte, client.config.ArtifactQueueSize)
+	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
+	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
@@ -307,6 +309,7 @@ func (config *Config) new() (*client, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	client.witnessesLock = &sync.Mutex{}
 
 	// Start the client.
 	shutdown, err := client.bootstrap()
