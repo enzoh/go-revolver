@@ -106,6 +106,5 @@ Processing:
 	}
 
 	client.streamstore.Remove(pid)
-	client.replenishStreamstore()
 
 }
