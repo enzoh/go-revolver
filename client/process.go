@@ -9,17 +9,22 @@
 package p2p
 
 import (
+	"encoding/hex"
 	"io"
+	"io/ioutil"
 
 	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/dfinity/go-dfinity-p2p/util"
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
-	"golang.org/x/crypto/sha3"
 )
 
 // Process artifacts from a stream.
 func (client *client) process(stream net.Stream) {
+
+	var buf [4]byte
+	var checksum [32]byte
+	var witnesses []peer.ID
 
 	pid := stream.Conn().RemotePeer()
 
@@ -27,7 +32,6 @@ Processing:
 	for {
 
 		// Get the checksum of the artifact.
-		var checksum [32]byte
 		_, err := io.ReadFull(stream, checksum[:])
 		if err != nil {
 			if err == io.EOF {
@@ -37,9 +41,18 @@ Processing:
 			}
 			break Processing
 		}
+		code := hex.EncodeToString(checksum[:4])
+
+		// Update the witnesses of the artifact.
+		client.witnessesLock.Lock()
+		peers, exists := client.witnesses.Get(checksum)
+		if exists {
+			witnesses = peers.([]peer.ID)
+		}
+		client.witnesses.Add(checksum, append(witnesses, pid))
+		client.witnessesLock.Unlock()
 
 		// Get the size of the artifact.
-		var buf [4]byte
 		_, err = io.ReadFull(stream, buf[:])
 		if err != nil {
 			if err == io.EOF {
@@ -51,45 +64,28 @@ Processing:
 		}
 		size := util.DecodeBigEndianUInt32(buf)
 
-		// Check if the client can create an artifact that large.
+		// Check if the client can create a buffer that large.
 		if size > client.config.ArtifactMaxBufferSize {
-			client.logger.Warningf("Cannot accept %d byte artifact from %v", size, pid)
+			client.logger.Warningf("Cannot accept %d byte artifact with checksum %s from %v", size, code, pid)
 			break Processing
 		}
 
-		// Create the artifact.
-		artifact := artifact.New(stream, checksum, size)
-
-		// Read the artifact.
-		data := make([]byte, size)
-		_, err = io.ReadFull(artifact, data)
-		if err != nil {
-			if err == io.EOF {
-				client.logger.Debug("Disconnecting from", pid)
-			} else {
-				client.logger.Warning("Cannot read artifact from", pid, err)
-			}
-			break Processing
-		}
-
-		// Verify the checksum of the artifact.
-		if sha3.Sum256(data) != checksum {
-			client.logger.Warning("Cannot verify checksum of artifact from", pid, err)
-			break Processing
-		}
-
-		// Update the witnesses of the artifact.
-		var witnesses []peer.ID
-		peers, exists := client.witnesses.Get(checksum)
-		if exists {
-			witnesses = peers.([]peer.ID)
-		}
-		client.witnesses.Add(checksum, append(witnesses, pid))
+		// Log the artifact details.
+		client.logger.Debugf("Receiving %d byte artifact with checksum %s from %v", size, code, pid)
 
 		// Check if the client has already received the artifact.
 		client.artifactsLock.Lock()
 		if client.artifacts.Contains(checksum) {
 			client.artifactsLock.Unlock()
+			_, err = io.CopyN(ioutil.Discard, stream, int64(size))
+			if err != nil {
+				if err == io.EOF {
+					client.logger.Debug("Disconnecting from", pid)
+				} else {
+					client.logger.Warning("Cannot read artifact from", pid, err)
+				}
+				break Processing
+			}
 			continue Processing
 		}
 
@@ -98,7 +94,14 @@ Processing:
 		client.artifactsLock.Unlock()
 
 		// Queue the artifact.
-		client.receive <- data
+		artifact := artifact.New(stream, checksum, size)
+		client.receive <- artifact
+
+		// Check if the artifact was invalid.
+		if <-artifact.Closer() != 0 {
+			client.logger.Debug("Disconnecting from", pid)
+			break Processing
+		}
 
 	}
 

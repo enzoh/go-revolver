@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/libp2p/go-libp2p-peerstore"
 )
 
@@ -48,22 +49,29 @@ func TestBroadcast(test *testing.T) {
 	for i := 0; i < 10; i++ {
 
 		// Generate a random artifact.
-		data1 := make([]byte, rand.Intn(int(client1.config.ArtifactMaxBufferSize)))
-		_, err = rand.Read(data1)
+		dataOut := make([]byte, rand.Intn(int(client1.config.ArtifactMaxBufferSize)))
+		_, err = rand.Read(dataOut)
 		if err != nil {
 			test.Fatal(err)
 		}
+		artifactOut := artifact.FromBytes(dataOut)
 
 		// Send the artifact to the second client.
-		client1.Send() <- data1
+		client1.Send() <- artifactOut
 
 		select {
 
 		// Wait for the second client to receive the artifact.
-		case data2 := <-client2.Receive():
+		case artifactIn := <-client2.Receive():
 
-			// Verify that the artifact sent and received is the same.
-			if !bytes.Equal(data1, data2) {
+			// Consume the artifact.
+			dataIn, err := artifact.ToBytes(artifactIn)
+			if err != nil {
+				test.Fatal(err)
+			}
+
+			// Verify that the data sent and received is the same.
+			if !bytes.Equal(dataOut, dataIn) {
 				test.Fatal("Corrupt artifact!")
 			}
 

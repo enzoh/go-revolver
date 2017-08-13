@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/libp2p/go-libp2p-peerstore"
 )
 
@@ -111,8 +112,8 @@ func TestDuplication(test *testing.T) {
 			select {
 			case <-notify2:
 				break Forwarding
-			case data := <-client2.Receive():
-				client2.Send() <- data
+			case artifact := <-client2.Receive():
+				client2.Send() <- artifact
 			}
 		}
 	}()
@@ -124,8 +125,8 @@ func TestDuplication(test *testing.T) {
 			select {
 			case <-notify4:
 				break Forwarding
-			case data := <-client4.Receive():
-				client4.Send() <- data
+			case artifact := <-client4.Receive():
+				client4.Send() <- artifact
 			}
 		}
 	}()
@@ -134,9 +135,10 @@ func TestDuplication(test *testing.T) {
 	go func() {
 		for i := 0; i < N; i++ {
 			time.Sleep(25 * time.Microsecond)
-			data := make([]byte, 32)
-			rand.Read(data)
-			client1.Send() <- data
+			dataOut := make([]byte, 32)
+			rand.Read(dataOut)
+			artifactOut := artifact.FromBytes(dataOut)
+			client1.Send() <- artifactOut
 		}
 	}()
 
@@ -147,10 +149,16 @@ func TestDuplication(test *testing.T) {
 		select {
 
 		// Wait for the third client to receive an artifact.
-		case data := <-client3.Receive():
+		case artifactIn := <-client3.Receive():
+
+			// Consume the artifact.
+			dataIn, err := artifact.ToBytes(artifactIn)
+			if err != nil {
+				test.Fatal(err)
+			}
 
 			// Verify that the artifact is not a duplicate.
-			key := hex.EncodeToString(data)
+			key := hex.EncodeToString(dataIn)
 			_, exists := cache[key]
 			if exists {
 				test.Fatal("Duplicate artifact!")

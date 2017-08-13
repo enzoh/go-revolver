@@ -9,14 +9,12 @@
 package p2p
 
 import (
-	"bytes"
 	"errors"
 	"io"
 
 	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/dfinity/go-dfinity-p2p/util"
 	"github.com/libp2p/go-libp2p-peer"
-	"golang.org/x/crypto/sha3"
 )
 
 // Activate the artifact broadcast.
@@ -30,20 +28,12 @@ func (client *client) activateBroadcast() func() {
 
 	// Broadcast artifacts from the send queue.
 	go func() {
-	Broadcast:
 		for {
 			select {
 			case <-notify:
-				break Broadcast
-			case data := <-client.send:
-				checksum := sha3.Sum256(data)
-				size := uint32(len(data))
-				artifact := artifact.New(
-					bytes.NewReader(data),
-					checksum,
-					size,
-				)
-				client.artifacts.Add(checksum, size)
+				return
+			case artifact := <-client.send:
+				client.artifacts.Add(artifact.Checksum(), artifact.Size())
 				client.broadcast(artifact)
 			}
 		}
@@ -133,7 +123,7 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 		}(peerId, result)
 	}
 
-	// Close the reader.
+	// Close the artifact.
 	artifact.Closer() <- 0
 
 }
