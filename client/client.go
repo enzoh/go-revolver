@@ -77,7 +77,7 @@ func DefaultConfig() (*Config, error) {
 		DisableNATPortMap:           false,
 		DisablePeerDiscovery:        false,
 		DisableStreamDiscovery:      false,
-		KBucketSize:                 8,
+		KBucketSize:                 16,
 		LatencyTolerance:            time.Minute,
 		ListenIP:                    "0.0.0.0",
 		ListenPort:                  4000,
