@@ -27,7 +27,7 @@ func main() {
 	// Parse command-line arguments.
 	argAnalyticsInterval := flag.Duration("analytics-interval", 10*time.Second, "Time between analytics reports.")
 	argAnalyticsURL := flag.String("analytics-url", "http://127.0.0.1:8080/report", "URL to send analytics reports.")
-	argBucketSize := flag.Int("bucket-size", 32, "Size of Kademlia buckets.")
+	argBucketSize := flag.Int("bucket-size", 16, "Size of Kademlia buckets.")
 	argClients := flag.Int("clients", 1, "Number of clients.")
 	argConnections := flag.Int("connections", 8, "Number of connections per client.")
 	argDial := flag.String("dial", "", "Address of seed node.")
