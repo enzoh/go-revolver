@@ -13,35 +13,38 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"flag"
-	"math/big"
 	"sync"
 	"time"
 
+	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/dfinity/go-dfinity-p2p/client"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/whyrusleeping/go-logging"
-	"golang.org/x/crypto/sha3"
 )
 
 func main() {
 
 	// Parse command-line arguments.
+	argAnalyticsInterval := flag.Duration("analytics-interval", 10*time.Second, "Time between analytics reports.")
+	argAnalyticsURL := flag.String("analytics-url", "http://127.0.0.1:8080/report", "URL to send analytics reports.")
+	argBucketSize := flag.Int("bucket-size", 32, "Size of Kademlia buckets.")
 	argClients := flag.Int("clients", 1, "Number of clients.")
+	argConnections := flag.Int("connections", 8, "Number of connections per client.")
 	argDial := flag.String("dial", "", "Address of seed node.")
+	argDisableAnalytics := flag.Bool("disable-analytics", false, "Disable analytics?")
 	argDisableNATPortMap := flag.Bool("disable-nat", false, "Disable port-mapping in NAT devices?")
-	argKBucketSize := flag.Int("k-bucket-size", 8, "K-bucket size.")
-	argLogLevel := flag.String("log-level", "NOTICE", "Log level.")
-	argListen := flag.String("listen", "0.0.0.0", "IP address to listen on.")
+	argIP := flag.String("ip", "0.0.0.0", "IP address to listen on.")
+	argLogLevel := flag.String("log-level", "INFO", "Log level.")
 	argPort := flag.Int("port", 4000, "Port number to listen on.")
 	argRandomSeed := flag.String("random-seed", "", "32-byte hex-encoded random seed.")
-	argSampleSize := flag.Int("sample-size", 4, "Number of peers to distribute per request.")
-	argStreams := flag.Int("streams", 8, "Number of streams per client.")
+	argReceiveOnly := flag.Bool("receive-only", false, "Only receive and rebroadcast artifacts?")
+	argSampleSize := flag.Int("sample-size", 6, "Number of peers to distribute per request.")
 	flag.Parse()
 
-	// Create logger.
+	// Create a logger.
 	logger := logging.MustGetLogger("main")
 
-	// Set log level.
+	// Set the log level.
 	var logLevel logging.Level
 	switch *argLogLevel {
 	case "CRITICAL":
@@ -59,15 +62,15 @@ func main() {
 	}
 	logging.SetLevel(logLevel, "main")
 
-	// Set seed node.
+	// Set a seed node.
 	var seedNodes []multiaddr.Multiaddr
-	if len(*argDial) != 0 {
-		seedAddress, err := multiaddr.NewMultiaddr(*argDial)
+	if *argDial != "" {
+		address, err := multiaddr.NewMultiaddr(*argDial)
 		if err != nil {
 			logger.Critical("Cannot create multiaddr", err)
 			return
 		}
-		seedNodes = []multiaddr.Multiaddr{seedAddress}
+		seedNodes = []multiaddr.Multiaddr{address}
 	}
 
 	// Create client configurations.
@@ -81,17 +84,20 @@ func main() {
 			return
 		}
 
+		configs[i].AnalyticsIterationInterval = *argAnalyticsInterval
+		configs[i].AnalyticsURL = *argAnalyticsURL
+		configs[i].DisableAnalytics = *argDisableAnalytics
 		configs[i].DisableNATPortMap = *argDisableNATPortMap
-		configs[i].KBucketSize = *argKBucketSize
-		configs[i].ListenIP = *argListen
+		configs[i].KBucketSize = *argBucketSize
+		configs[i].ListenIP = *argIP
 		configs[i].ListenPort = uint16(*argPort + i)
 		configs[i].LogLevel = logLevel
 		configs[i].RandomSeed = *argRandomSeed
 		configs[i].SampleSize = *argSampleSize
 		configs[i].SeedNodes = seedNodes
-		configs[i].StreamstoreCapacity = *argStreams
+		configs[i].StreamstoreCapacity = *argConnections
 
-		if len(*argRandomSeed) == 0 {
+		if *argRandomSeed == "" {
 			data := make([]byte, 32)
 			_, err = rand.Read(data)
 			if err != nil {
@@ -107,7 +113,7 @@ func main() {
 	group := &sync.WaitGroup{}
 	group.Add(*argClients)
 	for i := 0; i < *argClients; i++ {
-		go launch(configs[i], group, logger)
+		go launch(configs[i], group, logger, *argReceiveOnly)
 	}
 
 	// Wait for clients to complete.
@@ -115,7 +121,7 @@ func main() {
 
 }
 
-func launch(config *p2p.Config, group *sync.WaitGroup, logger *logging.Logger) {
+func launch(config *p2p.Config, group *sync.WaitGroup, logger *logging.Logger, receiveOnly bool) {
 
 	// Decrement the wait group counter on exit.
 	defer group.Done()
@@ -129,7 +135,9 @@ func launch(config *p2p.Config, group *sync.WaitGroup, logger *logging.Logger) {
 	defer shutdown()
 
 	// Send and receive artifacts.
-	go send(client, logger)
+	if !receiveOnly {
+		go send(client, logger)
+	}
 	go receive(client, logger)
 
 	// Hang forever.
@@ -141,35 +149,23 @@ func send(client p2p.Client, logger *logging.Logger) {
 
 	for {
 
-		// Sleep for five seconds.
-		time.Sleep(5 * time.Second)
+		// Wait.
+		time.Sleep(time.Minute)
 
-		// Generate a random artifact.
-		n, err := rand.Int(rand.Reader, big.NewInt(4096))
-		if err != nil {
-			logger.Warning("Cannot generate random integer", err)
-			break
-		}
-		data := make([]byte, n.Int64())
-		_, err = rand.Read(data)
-		if err != nil {
-			logger.Warning("Cannot generate random data", err)
-			break
-		}
+		// Create a 1Mb artifact and timestamp it.
+		size := 1000000
+		data := make([]byte, size)
+		rand.Read(data)
+		binary.BigEndian.PutUint64(data, uint64(time.Now().UnixNano()))
+		object := artifact.FromBytes(data)
 
-		// Timestamp the artifact.
-		timestamp := make([]byte, 8)
-		binary.BigEndian.PutUint64(timestamp, uint64(time.Now().UnixNano()))
-		data = append(data, timestamp...)
+		// Log the details of this artifact.
+		checksum := object.Checksum()
+		code := hex.EncodeToString(checksum[:4])
+		logger.Infof("Sending %d byte artifact with checksum %s", size, code)
 
-		// Send the artifact and timestamp.
-		hash := sha3.Sum256(data)
-		logger.Infof(
-			"Sending %d-byte artifact with hash <%s>",
-			len(data),
-			hex.EncodeToString(hash[:4]),
-		)
-		client.Send() <- data
+		// Broadcast the artifact.
+		client.Send() <- object
 
 	}
 
@@ -179,24 +175,29 @@ func receive(client p2p.Client, logger *logging.Logger) {
 
 	for {
 
-		// Receive an artifact.
-		data := <-client.Receive()
-		hash := sha3.Sum256(data)
-
-		// Record the latency.
-		var latency time.Duration
-		if len(data) >= 8 {
-			latency = time.Since(time.Unix(0, int64(binary.BigEndian.Uint64(data[len(data)-8:]))))
+		// Receive an artifact and extract data from it.
+		object := <-client.Receive()
+		data, err := artifact.ToBytes(object)
+		if err != nil {
+			logger.Warning("Cannot extract data from artifact", err)
+			continue
 		}
-		logger.Infof(
-			"Receiving %d-byte artifact with hash <%s> and latency %s",
-			len(data),
-			hex.EncodeToString(hash[:4]),
-			latency,
-		)
+
+		// Log the details of this artifact.
+		size := object.Size()
+		checksum := object.Checksum()
+		code := hex.EncodeToString(checksum[:4])
+		latency := time.Duration(0)
+		if len(data) >= 8 {
+			latency = time.Since(time.Unix(0, int64(binary.BigEndian.Uint64(data[:8]))))
+		}
+		logger.Infof("Receiving %d byte artifact with checksum %s and latency %s", size, code, latency)
+
+		// Create an artifact from the data.
+		object = artifact.FromBytes(data)
 
 		// Broadcast the artifact.
-		client.Send() <- data
+		client.Send() <- object
 
 	}
 
