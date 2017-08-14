@@ -56,7 +56,6 @@ func (client *client) discoverStreams() func() {
 // Replenish the stream store.
 func (client *client) replenishStreamstore() {
 
-	var candidates []peer.ID
 	var delta []peer.ID
 	var peers []peer.ID
 
@@ -84,22 +83,11 @@ func (client *client) replenishStreamstore() {
 			j := int(math.Floor(math.Exp(math.Log(n+1)*rand.Float64()) - 1))
 			info := client.peerstore.PeerInfo(delta[j])
 			if info.ID != client.id && len(info.Addrs) != 0 {
-				candidates = append(candidates, delta[j])
+				client.pair(info.ID)
 				t--
 			}
 			delta = append(delta[:j], delta[j+1:]...)
 		}
-
-	}
-
-	for i := range candidates {
-
-		if client.streamstore.Size() == client.streamstore.Capacity() {
-			break
-		}
-
-		// Request to exchange artifacts.
-		client.pair(candidates[i])
 
 	}
 
