@@ -86,42 +86,38 @@ func (client *client) ping(peerId peer.ID) error {
 }
 
 // Handle incomming pings.
-func (client *client) pingHandler() net.StreamHandler {
+func (client *client) pingHandler(stream net.Stream) {
 
-	return func(stream net.Stream) {
+	defer stream.Close()
 
-		defer stream.Close()
+	// Log this action.
+	pid := stream.Conn().RemotePeer()
+	client.logger.Debug("Pong", pid)
 
-		// Log this action.
-		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("Pong", pid)
-
-		// Receive data from the target peer.
-		rbuf, err := util.ReadWithTimeout(
-			stream,
-			client.config.PingBufferSize,
-			client.config.Timeout,
-		)
-		if err != nil {
-			client.logger.Warning("Cannot receive data from", pid, err)
-			return
-		}
-
-		// Send data to the target peer.
-		err = util.WriteWithTimeout(stream, rbuf, client.config.Timeout)
-		if err != nil {
-			client.logger.Warning("Cannot send data to", pid, err)
-		}
-
-		// Update the routing table.
-		client.table.Update(pid)
-
+	// Receive data from the target peer.
+	rbuf, err := util.ReadWithTimeout(
+		stream,
+		client.config.PingBufferSize,
+		client.config.Timeout,
+	)
+	if err != nil {
+		client.logger.Warning("Cannot receive data from", pid, err)
+		return
 	}
+
+	// Send data to the target peer.
+	err = util.WriteWithTimeout(stream, rbuf, client.config.Timeout)
+	if err != nil {
+		client.logger.Warning("Cannot send data to", pid, err)
+	}
+
+	// Update the routing table.
+	client.table.Update(pid)
 
 }
 
 // Register the ping handler.
 func (client *client) registerPingService() {
 	uri := client.protocol + "/ping"
-	client.host.SetStreamHandler(uri, client.pingHandler())
+	client.host.SetStreamHandler(uri, client.pingHandler)
 }
