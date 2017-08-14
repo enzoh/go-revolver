@@ -173,7 +173,9 @@ func TestStreamstore(test *testing.T) {
 			func(pid peer.ID, writer io.Writer) error {
 				_, err := writer.Write(artifact[:])
 				return err
-			})
+			},
+			nil,
+		)
 	}
 
 	// Verify that the artifacts were sent to the target peer.

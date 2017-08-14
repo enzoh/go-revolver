@@ -9,8 +9,8 @@
 package p2p
 
 import (
-	"errors"
 	"io"
+	"sort"
 
 	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/dfinity/go-dfinity-p2p/util"
@@ -56,19 +56,28 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	chunks := int((artifact.Size()+client.config.ArtifactChunkSize-1)/
 		client.config.ArtifactChunkSize + 1)
 
+	// Create a sorted exclude list from the witness cache.
+	var exclude peer.IDSlice
+	witnesses, exists := client.witnesses.Get(checksum)
+	if exists {
+		for _, id := range witnesses.([]peer.ID) {
+			exclude = append(exclude, id)
+		}
+	}
+	sort.Sort(exclude)
+
 	// Send the artifact metadata to those who have not seen it.
 	errors := make([]map[peer.ID]chan error, chunks)
 	errors[0] = client.streamstore.Apply(
 		func(peerId peer.ID, writer io.Writer) error {
-			if client.witness(peerId, checksum) {
-				return escape
-			}
 			return util.WriteWithTimeout(
 				writer,
 				metadata,
 				client.config.Timeout,
 			)
-		})
+		},
+		exclude,
+	)
 
 	// Send the artifact in chunks.
 	leftover := artifact.Size()
@@ -107,7 +116,9 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 					)
 				}
 				return nil
-			})
+			},
+			exclude,
+		)
 
 	}
 
@@ -116,7 +127,7 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 		go func(peerId peer.ID, result chan error) {
 			pid := peerId
 			err := <-result
-			if err != nil && err != escape {
+			if err != nil {
 				client.logger.Debug(pid, "failed to receive the artifact", err)
 				client.streamstore.Remove(pid)
 			}
@@ -127,19 +138,3 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	artifact.Close()
 
 }
-
-// Check if a peer has received an artifact.
-func (client *client) witness(peerId peer.ID, checksum [32]byte) bool {
-	witnesses, exists := client.witnesses.Get(checksum)
-	if exists {
-		for _, id := range witnesses.([]peer.ID) {
-			if id == peerId {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// An error to indicate that control was transferred to another operation.
-var escape = errors.New("ESC")

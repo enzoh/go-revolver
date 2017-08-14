@@ -11,6 +11,7 @@ package streamstore
 import (
 	"errors"
 	"io"
+	"sort"
 	"sync"
 
 	"github.com/libp2p/go-libp2p-net"
@@ -24,13 +25,14 @@ type Streamstore interface {
 	// Add a stream to a stream store.
 	Add(peer.ID, net.Stream) bool
 
-	// Apply a function to every stream in a stream store.
-	Apply(func(peer.ID, io.Writer) error) map[peer.ID]chan error
+	// Apply a function to every stream in a stream store except those
+	// specified in a sorted exclude list.
+	Apply(func(peer.ID, io.Writer) error, peer.IDSlice) map[peer.ID]chan error
 
-	// Calculate the capacity of a stream store.
+	// Get the capacity of a stream store.
 	Capacity() int
 
-	// List the peers associated with a stream store.
+	// Get the peers associated with a stream store.
 	Peers() []peer.ID
 
 	// Remove all streams from a stream store.
@@ -39,7 +41,7 @@ type Streamstore interface {
 	// Remove a stream from a stream store.
 	Remove(peer.ID)
 
-	// Calculate the size of a stream store.
+	// Get the size of a stream store.
 	Size() int
 }
 
@@ -95,11 +97,10 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 		stream,
 	}
 	go func() {
-	Processing:
 		for {
 			select {
 			case <-ctx.notify:
-				break Processing
+				return
 			case tx := <-ctx.queue:
 				ss.Debug("Processing transaction for", pid)
 				err := tx.query(pid, ctx.stream)
@@ -115,8 +116,9 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 	return true
 }
 
-// Apply a function to every stream in a stream store.
-func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error) map[peer.ID]chan error {
+// Apply a function to every stream in a stream store except those specified in
+// a sorted exclude list.
+func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error, exclude peer.IDSlice) map[peer.ID]chan error {
 	ss.Lock()
 	defer ss.Unlock()
 	tx := transaction{
@@ -126,6 +128,12 @@ func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error) map[peer.ID]chan 
 	}
 	var group sync.WaitGroup
 	for peerId, peerCtx := range ss.data {
+		i := sort.Search(len(exclude), func(i int) bool {
+			return exclude[i] >= peerId
+		})
+		if i < len(exclude) && exclude[i] == peerId {
+			continue
+		}
 		pid := peerId
 		ctx := peerCtx
 		group.Add(1)
@@ -150,12 +158,12 @@ func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error) map[peer.ID]chan 
 	return tx.result
 }
 
-// Calculate the capacity of a stream store.
+// Get the capacity of a stream store.
 func (ss *streamstore) Capacity() int {
 	return ss.capacity
 }
 
-// List the peers associated with a stream store.
+// Get the peers associated with a stream store.
 func (ss *streamstore) Peers() []peer.ID {
 	ss.Lock()
 	defer ss.Unlock()
@@ -195,7 +203,7 @@ func (ss *streamstore) Remove(peerId peer.ID) {
 	}
 }
 
-// Calculate the size of a stream store.
+// Get the size of a stream store.
 func (ss *streamstore) Size() int {
 	return len(ss.data)
 }
