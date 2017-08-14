@@ -82,7 +82,7 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 	ctx, exists := ss.data[pid]
 	if exists {
 		ss.Debug("Removing", pid, "from stream store")
-		ctx.notify <- struct{}{}
+		close(ctx.notify)
 		ctx.stream.Close()
 		delete(ss.data, pid)
 	} else if ss.Capacity() <= ss.Size() {
@@ -90,7 +90,7 @@ func (ss *streamstore) Add(peerId peer.ID, stream net.Stream) bool {
 		return false
 	}
 	ctx = peerctx{
-		make(chan struct{}, 1),
+		make(chan struct{}),
 		make(chan transaction, ss.txQueueSize),
 		stream,
 	}
@@ -175,7 +175,7 @@ func (ss *streamstore) Purge() {
 	for peerId, ctx := range ss.data {
 		pid := peerId
 		ss.Debug("Removing", pid, "from stream store")
-		ctx.notify <- struct{}{}
+		close(ctx.notify)
 		ctx.stream.Close()
 		delete(ss.data, pid)
 	}
@@ -189,7 +189,7 @@ func (ss *streamstore) Remove(peerId peer.ID) {
 	ctx, exists := ss.data[pid]
 	if exists {
 		ss.Debug("Removing", pid, "from stream store")
-		ctx.notify <- struct{}{}
+		close(ctx.notify)
 		ctx.stream.Close()
 		delete(ss.data, pid)
 	}
