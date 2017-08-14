@@ -21,9 +21,9 @@ import (
 func (client *client) activateBroadcast() func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct{}, 1)
+	notify := make(chan struct{})
 	shutdown := func() {
-		notify <- struct{}{}
+		close(notify)
 	}
 
 	// Broadcast artifacts from the send queue.

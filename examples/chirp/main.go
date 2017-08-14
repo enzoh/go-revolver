@@ -257,7 +257,7 @@ func ws(client p2p.Client, counter int, lock *sync.Mutex, logger *logging.Logger
 		}
 
 		counter++
-		notify := make(chan struct{}, 1)
+		notify := make(chan struct{})
 
 		go func() {
 
@@ -278,7 +278,7 @@ func ws(client p2p.Client, counter int, lock *sync.Mutex, logger *logging.Logger
 				client.Send() <- data
 			}
 
-			notify <- struct{}{}
+			close(notify)
 
 		}()
 
