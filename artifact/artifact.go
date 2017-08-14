@@ -19,14 +19,20 @@ import (
 // A simple interface for reading artifacts.
 type Artifact interface {
 
-	// Get the checksum of an artifact.
+	// Get the purported checksum of an artifact.
 	Checksum() [32]byte
 
-	// Get the closer of an artifact.
-	Closer() chan int
+	// Close an artifact.
+	Close()
 
-	// Get the size of an artifact.
+	// Close an artifact and disconnect from its sender.
+	Disconnect()
+
+	// Get the purported size of an artifact.
 	Size() uint32
+
+	// Wait for a finalizer to close an artifact.
+	Wait() int
 
 	io.Reader
 }
@@ -38,19 +44,29 @@ type artifact struct {
 	reader   io.Reader
 }
 
-// Get the checksum of an artifact.
+// Get the purported checksum of an artifact.
 func (artifact *artifact) Checksum() [32]byte {
 	return artifact.checksum
 }
 
-// Get the closer of an artifact.
-func (artifact *artifact) Closer() chan int {
-	return artifact.closer
+// Close an artifact.
+func (artifact *artifact) Close() {
+	artifact.closer <- 0
 }
 
-// Get the size of an artifact.
+// Close an artifact and disconnect from its sender.
+func (artifact *artifact) Disconnect() {
+	artifact.closer <- 1
+}
+
+// Get the purported size of an artifact.
 func (artifact *artifact) Size() uint32 {
 	return artifact.size
+}
+
+// Wait for a finalizer to close an artifact.
+func (artifact *artifact) Wait() int {
+	return <-artifact.closer
 }
 
 // Read bytes from an artifact.
@@ -58,7 +74,7 @@ func (artifact *artifact) Read(data []byte) (n int, err error) {
 	return artifact.reader.Read(data)
 }
 
-// Create an artifact.
+// Create an artifact from a reader.
 func New(reader io.Reader, checksum [32]byte, size uint32) Artifact {
 	return &artifact{
 		checksum,
@@ -73,18 +89,19 @@ func FromBytes(data []byte) Artifact {
 	return New(bytes.NewReader(data), sha3.Sum256(data), uint32(len(data)))
 }
 
-// Create a byte slice from an artifact.
+// Create a byte slice from an artifact. This will consume the artifact and
+// apply a finalizer. Do not use the artifact after calling this function.
 func ToBytes(artifact Artifact) ([]byte, error) {
 	data := make([]byte, artifact.Size())
 	_, err := io.ReadFull(artifact, data)
 	if err != nil {
-		artifact.Closer() <- 1
+		artifact.Disconnect()
 		return nil, err
 	}
 	if sha3.Sum256(data) != artifact.Checksum() {
-		artifact.Closer() <- 1
+		artifact.Disconnect()
 		return nil, errors.New("Cannot verify checksum of artifact")
 	}
-	artifact.Closer() <- 0
+	artifact.Close()
 	return data, nil
 }
