@@ -20,9 +20,9 @@ import (
 func (client *client) discoverPeers() func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct{}, 1)
+	notify := make(chan struct{})
 	shutdown := func() {
-		notify <- struct{}{}
+		close(notify)
 	}
 
 	// Replenish the routing table.

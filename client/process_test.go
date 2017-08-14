@@ -98,11 +98,11 @@ func TestDuplication(test *testing.T) {
 	}
 
 	// Create notifications to shutdown the artifact forwarding loops.
-	notify2 := make(chan struct{}, 1)
-	notify4 := make(chan struct{}, 1)
+	notify2 := make(chan struct{})
+	notify4 := make(chan struct{})
 	defer func() {
-		notify2 <- struct{}{}
-		notify4 <- struct{}{}
+		close(notify2)
+		close(notify4)
 	}()
 
 	// Forward artifacts from the first client to the third client.

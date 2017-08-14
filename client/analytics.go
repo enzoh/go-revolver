@@ -19,9 +19,9 @@ import (
 func (client *client) activateAnalytics() func() {
 
 	// Create a shutdown function.
-	notify := make(chan struct{}, 1)
+	notify := make(chan struct{})
 	shutdown := func() {
-		notify <- struct{}{}
+		close(notify)
 	}
 
 	go func() {
