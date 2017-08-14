@@ -98,7 +98,7 @@ Processing:
 		client.receive <- artifact
 
 		// Check if the artifact was invalid.
-		if <-artifact.Closer() != 0 {
+		if artifact.Wait() != 0 {
 			client.logger.Debug("Disconnecting from", pid)
 			break Processing
 		}

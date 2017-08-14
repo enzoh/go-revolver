@@ -86,7 +86,7 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 		_, err := io.ReadFull(artifact, data)
 		if err != nil {
 			client.logger.Warning("Cannot read artifact")
-			artifact.Closer() <- 1
+			artifact.Disconnect()
 			return
 		}
 
@@ -124,7 +124,7 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	}
 
 	// Close the artifact.
-	artifact.Closer() <- 0
+	artifact.Close()
 
 }
 
