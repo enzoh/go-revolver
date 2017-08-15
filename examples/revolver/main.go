@@ -90,12 +90,16 @@ func main() {
 		configs[i].DisableNATPortMap = *argDisableNATPortMap
 		configs[i].KBucketSize = *argBucketSize
 		configs[i].ListenIP = *argIP
-		configs[i].ListenPort = uint16(*argPort + i)
+		configs[i].ListenPort = uint16(*argPort)
 		configs[i].LogLevel = logLevel
 		configs[i].RandomSeed = *argRandomSeed
 		configs[i].SampleSize = *argSampleSize
 		configs[i].SeedNodes = seedNodes
 		configs[i].StreamstoreCapacity = *argConnections
+
+		if *argPort != 0 {
+			configs[i].ListenPort += uint16(i)
+		}
 
 		if *argRandomSeed == "" {
 			data := make([]byte, 32)
