@@ -75,7 +75,10 @@ func (client *client) bootstrap() (func(), error) {
 			options.NATManager,
 		)
 	}
-	client.host = basichost.NewHost(network, options)
+	client.host, err = basichost.NewHost(client.context, network, options)
+	if err != nil {
+		return nil, err
+	}
 
 	// Add the addresses used by the service host to the peer store.
 	addresses := client.host.Addrs()
