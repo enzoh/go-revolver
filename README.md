@@ -21,6 +21,10 @@ Check out the [GoDocs](https://godoc.org/github.com/dfinity/go-dfinity-p2p/clien
 
 Feel free to join in. All welcome. Open an [issue](https://github.com/dfinity/go-dfinity-p2p/issues)!
 
+## Acknowledgment
+
+We thank the libp2p developers for providing us a platform to develop this library.
+
 ## License
 
 GPLv3
