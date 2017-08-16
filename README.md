@@ -3,8 +3,6 @@
 
 > A decentralized peer-to-peer broadcast network.
 
-![](https://raw.githubusercontent.com/dfinity/go-dfinity-p2p/master/topology.gif)
-
 ## Prerequisites
 
 Go 1.8 or later.
