@@ -29,6 +29,7 @@ func main() {
 	argAnalyticsURL := flag.String("analytics-url", "http://127.0.0.1:8080/report", "URL to send analytics reports.")
 	argBucketSize := flag.Int("bucket-size", 16, "Size of Kademlia buckets.")
 	argClients := flag.Int("clients", 1, "Number of clients.")
+	argClusterID := flag.Int("cluster-id", 0, "HTCondor cluster identifier.")
 	argConnections := flag.Int("connections", 8, "Number of connections per client.")
 	argDial := flag.String("dial", "", "Address of seed node.")
 	argDisableAnalytics := flag.Bool("disable-analytics", false, "Disable analytics?")
@@ -36,6 +37,7 @@ func main() {
 	argIP := flag.String("ip", "0.0.0.0", "IP address to listen on.")
 	argLogLevel := flag.String("log-level", "INFO", "Log level.")
 	argPort := flag.Int("port", 4000, "Port number to listen on.")
+	argProcessID := flag.Int("process-id", 0, "HTCondor process identifier.")
 	argRandomSeed := flag.String("random-seed", "", "32-byte hex-encoded random seed.")
 	argReceiveOnly := flag.Bool("receive-only", false, "Only receive and rebroadcast artifacts?")
 	argSampleSize := flag.Int("sample-size", 6, "Number of peers to distribute per request.")
@@ -86,12 +88,14 @@ func main() {
 
 		configs[i].AnalyticsIterationInterval = *argAnalyticsInterval
 		configs[i].AnalyticsURL = *argAnalyticsURL
+		configs[i].ClusterID = *argClusterID
 		configs[i].DisableAnalytics = *argDisableAnalytics
 		configs[i].DisableNATPortMap = *argDisableNATPortMap
 		configs[i].KBucketSize = *argBucketSize
 		configs[i].ListenIP = *argIP
 		configs[i].ListenPort = uint16(*argPort)
 		configs[i].LogLevel = logLevel
+		configs[i].ProcessID = *argProcessID
 		configs[i].RandomSeed = *argRandomSeed
 		configs[i].SampleSize = *argSampleSize
 		configs[i].SeedNodes = seedNodes

@@ -38,6 +38,7 @@ type Config struct {
 	ArtifactChunkSize           uint32
 	ArtifactMaxBufferSize       uint32
 	ArtifactQueueSize           int
+	ClusterID                   int
 	DisableAnalytics            bool
 	DisableBroadcast            bool
 	DisableNATPortMap           bool
@@ -52,6 +53,7 @@ type Config struct {
 	NATMonitorTimeout           time.Duration
 	Network                     protocol.ID
 	PingBufferSize              uint32
+	ProcessID                   int
 	RandomSeed                  string
 	SampleMaxBufferSize         uint32
 	SampleSize                  int
@@ -72,6 +74,7 @@ func DefaultConfig() (*Config, error) {
 		ArtifactChunkSize:           1048576,
 		ArtifactMaxBufferSize:       16777216,
 		ArtifactQueueSize:           1024,
+		ClusterID:                   0,
 		DisableAnalytics:            false,
 		DisableBroadcast:            false,
 		DisableNATPortMap:           false,
@@ -86,6 +89,7 @@ func DefaultConfig() (*Config, error) {
 		NATMonitorTimeout:           time.Minute,
 		Network:                     "DFINITY",
 		PingBufferSize:              32,
+		ProcessID:                   0,
 		RandomSeed:                  "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 		SampleMaxBufferSize:         8192,
 		SampleSize:                  4,

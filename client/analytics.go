@@ -28,9 +28,11 @@ func (client *client) activateAnalytics() func() {
 
 		type Report struct {
 			Addrs     []string
-			Client    string
+			ClusterID int
 			Network   string
+			NodeID    string
 			Peers     int
+			ProcessID int
 			Streams   []string
 			Timestamp int64
 			Version   string
@@ -47,9 +49,11 @@ func (client *client) activateAnalytics() func() {
 
 			// Create a report.
 			report := Report{
-				Client:    client.id.Pretty(),
+				ClusterID: client.config.ClusterID,
 				Network:   string(client.config.Network),
+				NodeID:    client.id.Pretty(),
 				Peers:     client.table.Size(),
+				ProcessID: client.config.ProcessID,
 				Timestamp: time.Now().Unix(),
 				Version:   string(client.config.Version),
 			}
