@@ -92,7 +92,12 @@ func new(test *testing.T, port uint16) *client {
 	}
 
 	// Create a service host.
-	client.host = basichost.NewHost(network, &basichost.HostOpts{})
+	client.host, err = basichost.NewHost(client.ctx, network, &basichost.HostOpts{})
+	if err != nil {
+		test.Fatal(err)
+	}
+
+	// Register a service with the service host.
 	client.host.SetStreamHandler("/test", func(stream net.Stream) {
 		pid := stream.Conn().RemotePeer()
 		if client.streamstore.Add(pid, stream) {
