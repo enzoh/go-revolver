@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"time"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -31,6 +32,9 @@ type Artifact interface {
 	// Get the purported size of an artifact.
 	Size() uint32
 
+	// Get the purported timestamp of an artifact.
+	Timestamp() time.Time
+
 	// Wait for a finalizer to close an artifact.
 	Wait() int
 
@@ -38,10 +42,11 @@ type Artifact interface {
 }
 
 type artifact struct {
-	checksum [32]byte
-	closer   chan int
-	size     uint32
-	reader   io.Reader
+	checksum  [32]byte
+	closer    chan int
+	size      uint32
+	timestamp time.Time
+	reader    io.Reader
 }
 
 // Get the purported checksum of an artifact.
@@ -64,6 +69,11 @@ func (artifact *artifact) Size() uint32 {
 	return artifact.size
 }
 
+// Get the purported timestamp of an artifact.
+func (artifact *artifact) Timestamp() time.Time {
+	return artifact.timestamp
+}
+
 // Wait for a finalizer to close an artifact.
 func (artifact *artifact) Wait() int {
 	return <-artifact.closer
@@ -75,18 +85,24 @@ func (artifact *artifact) Read(data []byte) (n int, err error) {
 }
 
 // Create an artifact from a reader.
-func New(reader io.Reader, checksum [32]byte, size uint32) Artifact {
+func New(reader io.Reader, checksum [32]byte, size uint32, timestamp time.Time) Artifact {
 	return &artifact{
 		checksum,
 		make(chan int, 1),
 		size,
+		timestamp,
 		reader,
 	}
 }
 
 // Create an artifact from a byte slice.
 func FromBytes(data []byte) Artifact {
-	return New(bytes.NewReader(data), sha3.Sum256(data), uint32(len(data)))
+	return New(
+		bytes.NewReader(data),
+		sha3.Sum256(data),
+		uint32(len(data)),
+		time.Now(),
+	)
 }
 
 // Create a byte slice from an artifact. This will consume the artifact and

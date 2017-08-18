@@ -63,11 +63,23 @@ func ReadUInt32WithTimeout(reader io.Reader, timeout time.Duration) (uint32, err
 	var arr [4]byte
 	data, err := ReadWithTimeout(reader, 4, timeout)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	copy(arr[:], data)
 	n := DecodeBigEndianUInt32(arr)
 	return n, nil
+}
+
+// Read a timestamp from a stream using a timeout.
+func ReadTimestampWithTimeout(reader io.Reader, timeout time.Duration) (time.Time, error) {
+	var arr [8]byte
+	data, err := ReadWithTimeout(reader, 8, timeout)
+	if err != nil {
+		return time.Time{}, err
+	}
+	copy(arr[:], data)
+	t := DecodeTimestamp(arr)
+	return t, nil
 }
 
 // Encode an unsigned 32-bit integer using big-endian byte order.
@@ -85,4 +97,32 @@ func DecodeBigEndianUInt32(data [4]byte) (n uint32) {
 	reader := bytes.NewReader(data[:])
 	binary.Read(reader, binary.BigEndian, &n)
 	return
+}
+
+// Encode a signed 64-bit integer using big-endian byte order.
+func EncodeBigEndianInt64(n int64) (data [8]byte) {
+	var buf bytes.Buffer
+	writer := bufio.NewWriter(&buf)
+	binary.Write(writer, binary.BigEndian, &n)
+	writer.Flush()
+	copy(data[:], buf.Bytes())
+	return
+}
+
+// Decode a signed 64-bit integer using big-endian byte order.
+func DecodeBigEndianInt64(data [8]byte) (n int64) {
+	reader := bytes.NewReader(data[:])
+	binary.Read(reader, binary.BigEndian, &n)
+	return
+}
+
+// Encode a timestamp.
+func EncodeTimestamp(t time.Time) (data [8]byte) {
+	return EncodeBigEndianInt64(t.UnixNano())
+}
+
+// Decode a timestamp.
+func DecodeTimestamp(data [8]byte) time.Time {
+	n := DecodeBigEndianInt64(data)
+	return time.Unix(n/1000000000, n%1000000000).UTC()
 }

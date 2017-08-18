@@ -48,9 +48,15 @@ func (client *client) activateBroadcast() func() {
 func (client *client) broadcast(artifact artifact.Artifact) {
 
 	// Get the artifact metadata.
+	var metadata [44]byte
+
 	checksum := artifact.Checksum()
 	size := util.EncodeBigEndianUInt32(artifact.Size())
-	metadata := append(checksum[:], size[:]...)
+	timestamp := util.EncodeTimestamp(artifact.Timestamp().UTC())
+
+	copy(metadata[00:], checksum[:])
+	copy(metadata[32:], size[:])
+	copy(metadata[36:], timestamp[:])
 
 	// Calculate the number of chunks to transfer.
 	chunks := int((artifact.Size()+client.config.ArtifactChunkSize-1)/
@@ -72,7 +78,7 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 		func(peerId peer.ID, writer io.Writer) error {
 			return util.WriteWithTimeout(
 				writer,
-				metadata,
+				metadata[:],
 				client.config.Timeout,
 			)
 		},

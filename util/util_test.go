@@ -47,3 +47,13 @@ func TestEncodeDecodeBigEndianUInt32(test *testing.T) {
 		test.Fatal(n)
 	}
 }
+
+// Show that a signed 64-bit integer can be encoded and decoded using big-endian
+// byte order.
+func TestEncodeDecodeBigEndianInt64(test *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	n := rand.Int63()
+	if DecodeBigEndianInt64(EncodeBigEndianInt64(n)) != n {
+		test.Fatal(n)
+	}
+}

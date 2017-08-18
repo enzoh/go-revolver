@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/dfinity/go-dfinity-p2p/artifact"
 	"github.com/dfinity/go-dfinity-p2p/util"
@@ -22,7 +23,6 @@ import (
 // Process artifacts from a stream.
 func (client *client) process(stream net.Stream) {
 
-	var buf [4]byte
 	var checksum [32]byte
 	var witnesses []peer.ID
 
@@ -53,7 +53,10 @@ Processing:
 		client.witnessesLock.Unlock()
 
 		// Get the size of the artifact.
-		_, err = io.ReadFull(stream, buf[:])
+		size, err := util.ReadUInt32WithTimeout(
+			stream,
+			client.config.Timeout,
+		)
 		if err != nil {
 			if err == io.EOF {
 				client.logger.Debug("Disconnecting from", pid)
@@ -62,7 +65,6 @@ Processing:
 			}
 			break Processing
 		}
-		size := util.DecodeBigEndianUInt32(buf)
 
 		// Check if the client can create a buffer that large.
 		if size > client.config.ArtifactMaxBufferSize {
@@ -70,8 +72,23 @@ Processing:
 			break Processing
 		}
 
+		// Get the timestamp of the artifact.
+		timestamp, err := util.ReadTimestampWithTimeout(
+			stream,
+			client.config.Timeout,
+		)
+		if err != nil {
+			if err == io.EOF {
+				client.logger.Debug("Disconnecting from", pid)
+			} else {
+				client.logger.Warning("Cannot get timestamp of artifact from", pid, err)
+			}
+			break Processing
+		}
+		latency := time.Since(timestamp)
+
 		// Log the artifact details.
-		client.logger.Debugf("Receiving %d byte artifact with checksum %s from %v", size, code, pid)
+		client.logger.Debugf("Receiving %d byte artifact with checksum %s and latency %s from %v", size, code, latency, pid)
 
 		// Check if the client has already received the artifact.
 		client.artifactsLock.Lock()
@@ -94,7 +111,7 @@ Processing:
 		client.artifactsLock.Unlock()
 
 		// Queue the artifact.
-		artifact := artifact.New(stream, checksum, size)
+		artifact := artifact.New(stream, checksum, size, timestamp)
 		client.receive <- artifact
 
 		// Check if the artifact was invalid.

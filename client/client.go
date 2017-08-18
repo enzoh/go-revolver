@@ -190,8 +190,8 @@ func (config *Config) new() (*client, func(), error) {
 	if client.config.ArtifactCacheSize <= 0 {
 		return nil, nil, errors.New("Artifact cache size must be a positive integer.")
 	}
-	if client.config.ArtifactChunkSize <= 36 {
-		return nil, nil, errors.New("Artifact chunk size must be an integer greater than thirty-six.")
+	if client.config.ArtifactChunkSize <= 44 {
+		return nil, nil, errors.New("Artifact chunk size must be an integer greater than forty-four.")
 	}
 	if client.config.ArtifactMaxBufferSize <= 0 {
 		return nil, nil, errors.New("Artifact max buffer size must be a positive integer.")
