@@ -154,7 +154,7 @@ func (client *client) ID() string {
 
 // Get the peer count of a client.
 func (client *client) PeerCount() int {
-	return len(client.table.ListPeers())
+	return client.table.Size()
 }
 
 // Get the artifact receive queue of a client.
@@ -169,7 +169,7 @@ func (client *client) Send() chan artifact.Artifact {
 
 // Get the stream count of a client.
 func (client *client) StreamCount() int {
-	return len(client.streamstore.Peers())
+	return client.streamstore.Size()
 }
 
 // Create a client.
