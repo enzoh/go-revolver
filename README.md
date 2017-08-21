@@ -15,15 +15,15 @@ go get github.com/dfinity/go-dfinity-p2p/client
 
 ## Usage
 
-Check out the [documentation](https://godoc.org/github.com/dfinity/go-dfinity-p2p/client).
+Read the [documentation](https://godoc.org/github.com/dfinity/go-dfinity-p2p/client).
 
 ## Testnet
 
-Check out the [visualization](https://revolver.london.dfinity.build).
+Check out the [visualization](https://revolver.london.dfinity.build) of our HTCondor cluster running example clients on EC2.
 
 ## Contribute
 
-Feel free to join in. All welcome. Open an [issue](https://github.com/dfinity/go-dfinity-p2p/issues)!
+Feel free to join in. All are welcome. Open an [issue](https://github.com/dfinity/go-dfinity-p2p/issues)!
 
 ## Acknowledgment
 
