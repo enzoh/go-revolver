@@ -84,7 +84,7 @@ func (artifact *artifact) Read(data []byte) (n int, err error) {
 	return artifact.reader.Read(data)
 }
 
-// Create an artifact from a reader.
+// Create an artifact.
 func New(reader io.Reader, checksum [32]byte, size uint32, timestamp time.Time) Artifact {
 	return &artifact{
 		checksum,

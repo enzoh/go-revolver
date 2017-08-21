@@ -15,7 +15,11 @@ go get github.com/dfinity/go-dfinity-p2p/client
 
 ## Usage
 
-Check out the [GoDocs](https://godoc.org/github.com/dfinity/go-dfinity-p2p/client).
+Check out the [documentation](https://godoc.org/github.com/dfinity/go-dfinity-p2p/client).
+
+## Testnet
+
+Check out the [visualization](https://revolver.london.dfinity.build).
 
 ## Contribute
 
@@ -23,7 +27,7 @@ Feel free to join in. All welcome. Open an [issue](https://github.com/dfinity/go
 
 ## Acknowledgment
 
-We thank the libp2p developers for providing us a platform to develop this library.
+We thank the libp2p [developers](https://github.com/orgs/libp2p/people) for providing us a framework to develop this library.
 
 ## License
 
