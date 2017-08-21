@@ -19,7 +19,7 @@ Read the [documentation](https://godoc.org/github.com/dfinity/go-dfinity-p2p/cli
 
 ## Testnet
 
-Check out the [visualization](https://revolver.london.dfinity.build) of our HTCondor cluster running example clients on EC2.
+Check out this [visualization](https://revolver.london.dfinity.build) of our HTCondor cluster running example clients on EC2.
 
 ## Contribute
 
