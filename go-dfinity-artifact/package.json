@@ -1,15 +1,15 @@
 {
-    "author": "enzoh",
-    "bugs": {
-        "url": "https://github.com/dfinity/go-dfinity/issues"
-    },
-    "gx": {
-        "dvcsimport": "github.com/dfinity/go-dfinity/go-dfinity-artifact"
-    },
-    "gxVersion": "0.11.0",
-    "language": "go",
-    "license": "GPL3",
-    "name": "go-dfinity-artifact",
-    "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-    "version": "0.0.1"
+	"author": "enzoh",
+	"bugs": {
+		"url": "https://github.com/dfinity/go-dfinity/issues"
+	},
+	"gx": {
+		"dvcsimport": "github.com/dfinity/go-dfinity/go-dfinity-artifact"
+	},
+	"gxVersion": "0.11.0",
+	"language": "go",
+	"license": "GPL3",
+	"name": "go-dfinity-artifact",
+	"releaseCmd": "git commit -m \"Publish artifact package version $VERSION\"",
+	"version": "0.0.1"
 }
