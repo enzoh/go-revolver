@@ -14,9 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dfinity/go-dfinity/go-dfinity-artifact"
-
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
+	"gx/ipfs/QmXfZLaUjKGKUCs4ikNQsAtFWXXx5xZ7tp4s1GoVysNNBj/go-dfinity-artifact"
 )
 
 // Show that a client can broadcast artifacts to its peers.

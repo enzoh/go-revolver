@@ -12,10 +12,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/dfinity/go-dfinity/go-dfinity-artifact"
-	"github.com/dfinity/go-dfinity/go-dfinity-util"
-
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+	"gx/ipfs/QmXfZLaUjKGKUCs4ikNQsAtFWXXx5xZ7tp4s1GoVysNNBj/go-dfinity-artifact"
+	"gx/ipfs/Qmaq5QqMVmPBMcjJ8ksxyxfS9PJ4gNGoZBKmYLEn7jpA8i/go-dfinity-util"
 )
 
 // Activate the artifact broadcast.

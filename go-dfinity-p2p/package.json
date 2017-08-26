@@ -8,6 +8,21 @@
     },
     "gxDependencies": [
         {
+            "hash": "QmXfZLaUjKGKUCs4ikNQsAtFWXXx5xZ7tp4s1GoVysNNBj",
+            "name": "go-dfinity-artifact",
+            "version": "0.0.1"
+        },
+        {
+            "hash": "QmNXRzmFYCiQtjJKiA2zxThcRVrvQGYWbj1C9cyc6tp4tP",
+            "name": "go-dfinity-streamstore",
+            "version": "0.0.1"
+        },
+        {
+            "hash": "Qmaq5QqMVmPBMcjJ8ksxyxfS9PJ4gNGoZBKmYLEn7jpA8i",
+            "name": "go-dfinity-util",
+            "version": "0.0.1"
+        },
+        {
             "hash": "QmZyngpQxUGyx1T2bzEcst6YzERkvVwDzBMbsSQF4f1smE",
             "name": "go-libp2p",
             "version": "4.5.2"
