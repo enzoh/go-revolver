@@ -13,8 +13,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/libp2p/go-libp2p-kbucket"
-	"github.com/libp2p/go-libp2p-peer"
+	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket"
+	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 )
 
 // Discover streams.

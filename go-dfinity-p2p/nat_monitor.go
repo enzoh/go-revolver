@@ -11,9 +11,9 @@ package p2p
 import (
 	"time"
 
-	"github.com/libp2p/go-libp2p-peerstore"
-	"github.com/libp2p/go-libp2p/p2p/host/basic"
-	"github.com/multiformats/go-multiaddr"
+	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
+	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
+	"gx/ipfs/QmZyngpQxUGyx1T2bzEcst6YzERkvVwDzBMbsSQF4f1smE/go-libp2p/p2p/host/basic"
 )
 
 // Monitor port mapping in NAT devices.

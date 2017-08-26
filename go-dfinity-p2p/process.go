@@ -14,10 +14,11 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/dfinity/go-dfinity-p2p/artifact"
-	"github.com/dfinity/go-dfinity-p2p/util"
-	"github.com/libp2p/go-libp2p-net"
-	"github.com/libp2p/go-libp2p-peer"
+	"github.com/dfinity/go-dfinity/go-dfinity-artifact"
+	"github.com/dfinity/go-dfinity/go-dfinity-util"
+
+	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+	"gx/ipfs/QmahYsGWry85Y7WUe2SX5G4JkH2zifEQAUtJVLZ24aC9DF/go-libp2p-net"
 )
 
 // Process artifacts from a stream.

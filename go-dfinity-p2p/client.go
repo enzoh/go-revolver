@@ -17,18 +17,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dfinity/go-dfinity-p2p/artifact"
-	"github.com/dfinity/go-dfinity-p2p/streamstore"
+	"github.com/dfinity/go-dfinity/go-dfinity-artifact"
+	"github.com/dfinity/go-dfinity/go-dfinity-streamstore"
 	"github.com/hashicorp/golang-lru"
-	"github.com/libp2p/go-libp2p-crypto"
-	"github.com/libp2p/go-libp2p-kbucket"
-	"github.com/libp2p/go-libp2p-kbucket/keyspace"
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-peerstore"
-	"github.com/libp2p/go-libp2p-protocol"
-	"github.com/libp2p/go-libp2p/p2p/host/basic"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/whyrusleeping/go-logging"
+
+	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
+	"gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
+	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket"
+	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket/keyspace"
+	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
+	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+	"gx/ipfs/QmZyngpQxUGyx1T2bzEcst6YzERkvVwDzBMbsSQF4f1smE/go-libp2p/p2p/host/basic"
+	"gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
 )
 
 type Config struct {

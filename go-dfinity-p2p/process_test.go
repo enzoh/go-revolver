@@ -14,8 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dfinity/go-dfinity-p2p/artifact"
-	"github.com/libp2p/go-libp2p-peerstore"
+	"github.com/dfinity/go-dfinity/go-dfinity-artifact"
+
+	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 )
 
 // Show that a client cannot receive duplicate artifacts.

@@ -16,10 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dfinity/go-dfinity-p2p/artifact"
-	"github.com/dfinity/go-dfinity-p2p/client"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/whyrusleeping/go-logging"
+	"github.com/dfinity/go-dfinity/go-dfinity-artifact"
+	"github.com/dfinity/go-dfinity/go-dfinity-p2p"
+
+	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
+	"gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
 )
 
 func main() {

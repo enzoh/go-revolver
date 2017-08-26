@@ -11,7 +11,7 @@ package p2p
 import (
 	"testing"
 
-	"github.com/libp2p/go-libp2p-peerstore"
+	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 )
 
 // Show that a client can receive a random sample of peers from the routing
