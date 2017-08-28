@@ -2,15 +2,17 @@ dist: xenial
 install:
 - rm -r /home/travis/.gimme/versions/go1.7.4.linux.amd64
 - wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
-- tar -xf go1.8.linux-amd64.tar.gz
+- tar xf go1.8.linux-amd64.tar.gz
 - sudo mv go /usr/local
-- mkdir -p $HOME/go/src
+- mkdir $HOME/go
 - export GOROOT=/usr/local/go
-- export PATH=$PATH:$GOROOT/bin
 - export GOPATH=$HOME/go
+- export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+- go get github.com/whyrusleeping/gx
+- go get github.com/whyrusleeping/gx-go
+- go get github.com/hashicorp/golang-lru
+- go get golang.org/x/crypto/sha3
 script:
-- cd client
-- go version
-- go get ./...
-- go build
+- cd go-dfinity-p2p
+- gx install
 - go test
