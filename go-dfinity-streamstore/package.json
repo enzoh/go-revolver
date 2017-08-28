@@ -52,6 +52,5 @@
 	"language": "go",
 	"license": "GPL3",
 	"name": "go-dfinity-streamstore",
-	"releaseCmd": "git commit -m \"Publish streamstore package version $VERSION\"",
 	"version": "0.0.1"
 }

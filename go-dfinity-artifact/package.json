@@ -10,6 +10,5 @@
 	"language": "go",
 	"license": "GPL3",
 	"name": "go-dfinity-artifact",
-	"releaseCmd": "git commit -m \"Publish artifact package version $VERSION\"",
 	"version": "0.0.1"
 }
