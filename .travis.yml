@@ -1,30 +1,20 @@
 dist: xenial
 install:
-# Set environment variables ...
-- export GOROOT=/usr/local/go
-- export GOPATH=$HOME/go
-- export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 # Install Go ...
 - rm -r /home/travis/.gimme/versions/go1.7.4.linux.amd64
 - wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
 - tar xf go1.8.linux-amd64.tar.gz
 - sudo mv go /usr/local
 - mkdir $HOME/go
+# Set environment variables ...
+- export GOROOT=/usr/local/go
+- export GOPATH=$HOME/go
+- export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 # Install Go packages ...
+- wget https://s3-us-west-2.amazonaws.com/gx-deps/gx.zip
+- unzip gx.zip -d $GOPATH
 - go get github.com/hashicorp/golang-lru
-- go get github.com/whyrusleeping/gx
-- go get github.com/whyrusleeping/gx-go
 - go get golang.org/x/crypto/sha3
-# Install IPFS ...
-- wget https://dist.ipfs.io/go-ipfs/v0.4.10/go-ipfs_v0.4.10_linux-amd64.tar.gz
-- tar xf go-ipfs_v0.4.10_linux-amd64.tar.gz
-- sudo mv go-ipfs/ipfs /usr/local/bin
-# Install Go packages via IPFS ...
-- nohup ipfs daemon &
-- pushd go-dfinity-p2p
-- gx install
-- popd
-- killall ipfs
 script:
 - pushd go-dfinity-p2p
 - go test
