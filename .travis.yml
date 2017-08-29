@@ -5,14 +5,14 @@ install:
 - wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
 - tar xf go1.8.linux-amd64.tar.gz
 - sudo mv go /usr/local
-- mkdir $HOME/go
+- mkdir -p $HOME/go/src
 # Set environment variables ...
 - export GOROOT=/usr/local/go
 - export GOPATH=$HOME/go
 - export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 # Install Go packages ...
 - wget https://s3-us-west-2.amazonaws.com/gx-deps/gx.zip
-- unzip gx.zip -d $GOPATH
+- unzip gx.zip -d $GOPATH/src
 - go get github.com/hashicorp/golang-lru
 - go get golang.org/x/crypto/sha3
 script:
