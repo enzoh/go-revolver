@@ -77,5 +77,5 @@
 	"language": "go",
 	"license": "GPL3",
 	"name": "go-dfinity-p2p",
-	"version": "0.0.1"
+	"version": "0.0.2"
 }
