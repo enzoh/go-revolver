@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
-	"gx/ipfs/QmXfZLaUjKGKUCs4ikNQsAtFWXXx5xZ7tp4s1GoVysNNBj/go-dfinity-artifact"
 )
 
 // Show that a client can broadcast artifacts to its peers.
@@ -54,21 +53,14 @@ func TestBroadcast(test *testing.T) {
 		if err != nil {
 			test.Fatal(err)
 		}
-		artifactOut := artifact.FromBytes(dataOut)
 
 		// Send the artifact to the second client.
-		client1.Send() <- artifactOut
+		client1.Send() <- dataOut
 
 		select {
 
 		// Wait for the second client to receive the artifact.
-		case artifactIn := <-client2.Receive():
-
-			// Consume the artifact.
-			dataIn, err := artifact.ToBytes(artifactIn)
-			if err != nil {
-				test.Fatal(err)
-			}
+		case dataIn := <-client2.Receive():
 
 			// Verify that the data sent and received is the same.
 			if !bytes.Equal(dataOut, dataIn) {

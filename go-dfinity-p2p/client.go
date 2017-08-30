@@ -26,7 +26,6 @@ import (
 	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket/keyspace"
 	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
-	"gx/ipfs/QmXfZLaUjKGKUCs4ikNQsAtFWXXx5xZ7tp4s1GoVysNNBj/go-dfinity-artifact"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmZyngpQxUGyx1T2bzEcst6YzERkvVwDzBMbsSQF4f1smE/go-libp2p/p2p/host/basic"
 	"gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
@@ -115,10 +114,10 @@ type Client interface {
 	PeerCount() int
 
 	// Get the artifact receive queue of a client.
-	Receive() chan artifact.Artifact
+	Receive() chan []byte
 
 	// Get the artifact send queue of a client.
-	Send() chan artifact.Artifact
+	Send() chan []byte
 
 	// Get the stream count of a client.
 	StreamCount() int
@@ -135,8 +134,8 @@ type client struct {
 	logger        *logging.Logger
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
-	receive       chan artifact.Artifact
-	send          chan artifact.Artifact
+	receive       chan []byte
+	send          chan []byte
 	streamstore   streamstore.Streamstore
 	table         *kbucket.RoutingTable
 	witnesses     *lru.Cache
@@ -159,12 +158,12 @@ func (client *client) PeerCount() int {
 }
 
 // Get the artifact receive queue of a client.
-func (client *client) Receive() chan artifact.Artifact {
+func (client *client) Receive() chan []byte {
 	return client.receive
 }
 
 // Get the artifact send queue of a client.
-func (client *client) Send() chan artifact.Artifact {
+func (client *client) Send() chan []byte {
 	return client.send
 }
 
@@ -289,8 +288,8 @@ func (config *Config) new() (*client, func(), error) {
 	)
 
 	// Create the artifact queues.
-	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
-	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
+	client.send = make(chan []byte, client.config.ArtifactQueueSize)
+	client.receive = make(chan []byte, client.config.ArtifactQueueSize)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(

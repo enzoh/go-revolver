@@ -32,9 +32,10 @@ func (client *client) activateBroadcast() func() {
 			select {
 			case <-notify:
 				return
-			case artifact := <-client.send:
-				client.artifacts.Add(artifact.Checksum(), artifact.Size())
-				client.broadcast(artifact)
+			case data := <-client.send:
+				object := artifact.FromBytes(data)
+				client.artifacts.Add(object.Checksum(), object.Size())
+				client.broadcast(object)
 			}
 		}
 	}()

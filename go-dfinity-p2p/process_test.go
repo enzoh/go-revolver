@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
-	"gx/ipfs/QmXfZLaUjKGKUCs4ikNQsAtFWXXx5xZ7tp4s1GoVysNNBj/go-dfinity-artifact"
 )
 
 // Show that a client cannot receive duplicate artifacts.
@@ -137,8 +136,7 @@ func TestDuplication(test *testing.T) {
 			time.Sleep(25 * time.Microsecond)
 			dataOut := make([]byte, 32)
 			rand.Read(dataOut)
-			artifactOut := artifact.FromBytes(dataOut)
-			client1.Send() <- artifactOut
+			client1.Send() <- dataOut
 		}
 	}()
 
@@ -149,13 +147,7 @@ func TestDuplication(test *testing.T) {
 		select {
 
 		// Wait for the third client to receive an artifact.
-		case artifactIn := <-client3.Receive():
-
-			// Consume the artifact.
-			dataIn, err := artifact.ToBytes(artifactIn)
-			if err != nil {
-				test.Fatal(err)
-			}
+		case dataIn := <-client3.Receive():
 
 			// Verify that the artifact is not a duplicate.
 			key := hex.EncodeToString(dataIn)

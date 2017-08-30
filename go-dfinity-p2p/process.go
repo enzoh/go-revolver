@@ -110,12 +110,23 @@ Processing:
 		client.artifacts.Add(checksum, size)
 		client.artifactsLock.Unlock()
 
+		// Consume the artifact.
+		object := artifact.New(stream, checksum, size, timestamp)
+		data, err := artifact.ToBytes(object)
+		if err != nil {
+			if err == io.EOF {
+				client.logger.Debug("Disconnecting from", pid)
+			} else {
+				client.logger.Warning("Cannot read artifact from", pid, err)
+			}
+			break Processing
+		}
+
 		// Queue the artifact.
-		artifact := artifact.New(stream, checksum, size, timestamp)
-		client.receive <- artifact
+		client.receive <- data
 
 		// Check if the artifact was invalid.
-		if artifact.Wait() != 0 {
+		if object.Wait() != 0 {
 			client.logger.Debug("Disconnecting from", pid)
 			break Processing
 		}
