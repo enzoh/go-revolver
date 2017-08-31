@@ -43,15 +43,6 @@ Processing:
 		}
 		code := hex.EncodeToString(checksum[:4])
 
-		// Update the witnesses of the artifact.
-		client.witnessesLock.Lock()
-		peers, exists := client.witnesses.Get(checksum)
-		if exists {
-			witnesses = peers.([]peer.ID)
-		}
-		client.witnesses.Add(checksum, append(witnesses, pid))
-		client.witnessesLock.Unlock()
-
 		// Get the size of the artifact.
 		size, err := util.ReadUInt32WithTimeout(
 			stream,
@@ -121,6 +112,15 @@ Processing:
 			}
 			break Processing
 		}
+
+		// Update the witnesses of the artifact.
+		client.witnessesLock.Lock()
+		peers, exists := client.witnesses.Get(checksum)
+		if exists {
+			witnesses = peers.([]peer.ID)
+		}
+		client.witnesses.Add(checksum, append(witnesses, pid))
+		client.witnessesLock.Unlock()
 
 		// Queue the artifact.
 		client.receive <- data
