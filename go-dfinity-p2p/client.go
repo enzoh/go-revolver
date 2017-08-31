@@ -97,7 +97,7 @@ func DefaultConfig() (*Config, error) {
 		StreamstoreCapacity:         8,
 		StreamstoreQueueSize:        4096,
 		Timeout:                     peerstore.TempAddrTTL,
-		Version:                     "0.0.2",
+		Version:                     "0.0.6",
 		WitnessCacheSize:            1024,
 	}, nil
 }
