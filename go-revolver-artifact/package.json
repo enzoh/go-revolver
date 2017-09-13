@@ -1,0 +1,14 @@
+{
+	"author": "enzoh",
+	"bugs": {
+		"url": "https://github.com/dfinity/go-revolver/issues"
+	},
+	"gx": {
+		"dvcsimport": "github.com/dfinity/go-revolver/go-revolver-artifact"
+	},
+	"gxVersion": "0.11.0",
+	"language": "go",
+	"license": "GPL3",
+	"name": "go-revolver-artifact",
+	"version": "0.1.0"
+}

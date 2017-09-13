@@ -13,9 +13,9 @@ install:
 # Install Go packages ...
 - wget https://s3-us-west-2.amazonaws.com/gx-deps/gx.zip
 - unzip gx.zip -d $GOPATH/src
+- go get github.com/enzoh/go-logging
 - go get github.com/hashicorp/golang-lru
-- go get golang.org/x/crypto/sha3
 script:
-- pushd go-dfinity-p2p
+- pushd go-revolver-p2p
 - go test
 - popd

@@ -1,29 +1,36 @@
-# go-dfinity-p2p
-[![Build Status](https://travis-ci.org/dfinity/go-dfinity-p2p.svg?branch=master)](https://travis-ci.org/dfinity/go-dfinity-p2p)
+# go-revolver
+[![Build Status](https://travis-ci.org/dfinity/go-revolver.svg?branch=master)](https://travis-ci.org/dfinity/go-revolver)
 
 > A decentralized peer-to-peer broadcast network.
 
 ## Prerequisites
 
-Go 1.8 or later.
+- go compiler (v1.8 or later)
+- gx package management tool (v0.11 or later)
 
 ## Install
 
-```sh
-go get github.com/dfinity/go-dfinity-p2p/client
+Simply add the latest release to your gx dependencies.
+```json
+{
+    "gxDependencies": [
+        {
+            "hash": "QmWxHwt1jaB9F5bDUivgHhMcxUr5TXxtXJe3YwDFVCk9iz",
+            "name": "go-revolver-p2p",
+            "version": "0.0.0"
+        }
+    ]
+}
 ```
 
-## Usage
-
-Read the [documentation](https://godoc.org/github.com/dfinity/go-dfinity-p2p/client).
-
-## Testnet
-
-Check out this [visualization](https://revolver.london.dfinity.build) of our HTCondor cluster running example clients on EC2.
+Then fetch it from IPFS.
+```sh
+gx install
+```
 
 ## Contribute
 
-Feel free to join in. All are welcome. Open an [issue](https://github.com/dfinity/go-dfinity-p2p/issues)!
+Feel free to join in. All are welcome. Open an [issue](https://github.com/dfinity/go-revolver/issues)!
 
 ## Acknowledgment
 
