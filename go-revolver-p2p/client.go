@@ -277,7 +277,7 @@ func (config *Config) new() (*client, func(), error) {
 	logging.SetBackend(logging.AddModuleLevel(backend))
 	logging.SetFormatter(logging.MustStringFormatter(formatter))
 	logging.SetLevel(client.config.LogLevel, "p2p")
-	logging.SetLevel(client.config.LogLevel, "streamstore")
+	logging.SetLevel(logging.INFO, "streamstore")
 
 	// Create a peer store.
 	client.peerstore = peerstore.NewPeerstore()
