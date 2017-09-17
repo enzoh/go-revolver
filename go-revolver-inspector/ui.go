@@ -269,7 +269,7 @@ var HTML = []byte(`<!DOCTYPE html>
 			</nav>
 
 			<!-- Diagram -->
-			<svg class="diagram" width="420" height="420" viewBox="0 0 420 630" preserveAspectRatio="xMidYMid"></svg>
+			<svg class="diagram" width="1400" height="1400" viewBox="0 0 1400 2100" preserveAspectRatio="xMidYMid"></svg>
 
 			<!-- Home -->
 			<section id="home">
