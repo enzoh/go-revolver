@@ -24,6 +24,7 @@ import (
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 	"gx/ipfs/QmS4riunERcveYZL7ZtqajnxTX3FxmCboYf784kWwyr78H/go-revolver-streamstore"
 	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket"
+	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket/keyspace"
 	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
@@ -71,10 +72,10 @@ func DefaultConfig() (*Config, error) {
 	return &Config{
 		AnalyticsInterval:      time.Minute,
 		AnalyticsURL:           "https://analytics.dfinity.build/report",
-		ArtifactCacheSize:      8192,
-		ArtifactChunkSize:      16384,
+		ArtifactCacheSize:      65536,
+		ArtifactChunkSize:      65536,
 		ArtifactMaxBufferSize:  16777216,
-		ArtifactQueueSize:      1024,
+		ArtifactQueueSize:      8192,
 		ClusterID:              0,
 		DisableAnalytics:       false,
 		DisableBroadcast:       false,
@@ -82,7 +83,7 @@ func DefaultConfig() (*Config, error) {
 		DisablePeerDiscovery:   false,
 		DisableStreamDiscovery: false,
 		IP:                     "0.0.0.0",
-		KBucketSize:            32,
+		KBucketSize:            16,
 		LatencyTolerance:       time.Minute,
 		LogFile:                os.Stdout,
 		LogLevel:               logging.INFO,
@@ -97,10 +98,10 @@ func DefaultConfig() (*Config, error) {
 		SampleSize:             4,
 		SeedNodes:              nil,
 		StreamstoreCapacity:    8,
-		StreamstoreQueueSize:   4096,
+		StreamstoreQueueSize:   8192,
 		Timeout:                peerstore.TempAddrTTL,
 		Version:                "0.0.0",
-		WitnessCacheSize:       1024,
+		WitnessCacheSize:       65536,
 	}, nil
 }
 
@@ -132,6 +133,7 @@ type client struct {
 	context       context.Context
 	host          *basichost.BasicHost
 	id            peer.ID
+	key           keyspace.Key
 	logger        *logging.Logger
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
@@ -270,6 +272,9 @@ func (config *Config) new() (*client, func(), error) {
 		return nil, nil, err
 	}
 
+	// Create a key in the XOR key space.
+	client.key = keyspace.XORKeySpace.Key(kbucket.ConvertPeerID(client.id))
+
 	// Create a logger.
 	client.logger = logging.MustGetLogger("p2p")
 	backend := logging.NewLogBackend(client.config.LogFile, "", 0)
@@ -306,7 +311,7 @@ func (config *Config) new() (*client, func(), error) {
 	// Create a routing table.
 	client.table = kbucket.NewRoutingTable(
 		client.config.KBucketSize,
-		kbucket.ConvertPeerID(client.id),
+		client.key.Bytes,
 		client.config.LatencyTolerance,
 		client.peerstore,
 	)

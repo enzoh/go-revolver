@@ -10,7 +10,6 @@ package p2p
 
 import (
 	"encoding/json"
-	"math"
 	"math/rand"
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
@@ -91,14 +90,13 @@ func (client *client) sampleHandler(stream net.Stream) {
 	client.logger.Debug("Receiving request for peers from", pid)
 
 	// Select peers from the routing table.
-	peers := closest(pid, client.table.ListPeers())
+	peers := client.table.ListPeers()
 	var sample []peerstore.PeerInfo
 	for len(peers) > 0 {
 		if client.config.SampleSize <= len(sample) {
 			break
 		}
-		n := float64(len(peers))
-		j := int(math.Floor(math.Exp(math.Log(n+1)*rand.Float64()) - 1))
+		j := rand.Intn(len(peers))
 		info := client.peerstore.PeerInfo(peers[j])
 		if info.ID != client.id && info.ID != pid && len(info.Addrs) != 0 {
 			sample = append(sample, info)

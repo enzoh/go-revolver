@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"time"
 
+	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 )
 
@@ -54,48 +55,64 @@ func (client *client) discoverStreams() func() {
 // Replenish the stream store.
 func (client *client) replenishStreamstore() {
 
-	// Calculate the targets.
-	targetE := client.streamstore.Capacity() / 2
-	targetW := client.streamstore.Capacity() - targetE
+	var delta []peer.ID
+	var peers []peer.ID
 
-	targetNE := targetE / 2
-	targetSE := targetE - targetNE
-	targetSW := targetW / 2
-	targetNW := targetW - targetSW
-
-	//
-	queueNE, queueSE, queueSW, queueNW := neighbors(
-		client.id,
-		client.table.ListPeers(),
-	)
-
-	buckets := [][]peer.ID{queueNE, queueSE, queueSW, queueNW}
-	targets := []int{targetNE, targetSE, targetSW, targetNW}
+	buckets := client.table.Buckets
 	streams := client.streamstore.Peers()
+	targets := deal(client.streamstore.Capacity(), len(buckets))
 
 	for i := range buckets {
 
-		peers := difference(buckets[i], streams)
+		peers = buckets[i].Peers()
+		delta = kbucket.SortClosestPeers(
+			difference(peers, streams),
+			kbucket.ConvertPeerID(client.id),
+		)
 
-		s := len(streams) - len(difference(streams, buckets[i]))
+		s := len(streams) - len(difference(streams, peers))
 		t := targets[i]
 
 		// Select candidates from this bucket.
-		for len(peers) > 0 {
+		for len(delta) > 0 {
 			if s >= t {
 				break
 			}
-			n := float64(len(peers))
+			n := float64(len(delta))
 			j := int(math.Floor(math.Exp(math.Log(n+1)*rand.Float64()) - 1))
-			info := client.peerstore.PeerInfo(peers[j])
+			info := client.peerstore.PeerInfo(delta[j])
 			if info.ID != client.id && len(info.Addrs) != 0 {
 				client.pair(info.ID)
 				t--
 			}
-			peers = append(peers[:j], peers[j+1:]...)
+			delta = append(delta[:j], delta[j+1:]...)
 		}
 
 	}
+
+}
+
+// Divide a by b and split the remainder.
+func deal(a, b int) []int {
+
+	if b < 1 {
+		return nil
+	}
+
+	q := a / b
+	r := a % b
+
+	result := make([]int, b)
+
+	for i := 0; i < b; i++ {
+		result[i] = q
+	}
+
+	for i := 0; i < r; i++ {
+		result[i]++
+	}
+
+	return result
 
 }
 
