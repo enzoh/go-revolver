@@ -127,6 +127,7 @@ func graph(reports map[string]Report, lock *sync.Mutex, ttl time.Duration) http.
 		}
 
 		header := resp.Header()
+		header.Set("Access-Control-Allow-Origin", "http://localhost:8080")
 		header.Set("Content-Type", "application/json")
 
 		resp.Write(data)
