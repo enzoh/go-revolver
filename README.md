@@ -15,9 +15,9 @@ Simply add the latest release to your gx dependencies.
 {
     "gxDependencies": [
         {
-            "hash": "QmWxHwt1jaB9F5bDUivgHhMcxUr5TXxtXJe3YwDFVCk9iz",
+            "hash": "QmXz8gebptKTDCWForTFiwWyzzTQ6GfH4EH39q7X9TiYao",
             "name": "go-revolver-p2p",
-            "version": "0.0.0"
+            "version": "0.1.0"
         }
     ]
 }
