@@ -35,6 +35,7 @@ import (
 type Config struct {
 	AnalyticsInterval      time.Duration
 	AnalyticsURL           string
+	AnalyticsUserData      string
 	ArtifactCacheSize      int
 	ArtifactChunkSize      uint32
 	ArtifactMaxBufferSize  uint32
@@ -72,6 +73,7 @@ func DefaultConfig() (*Config, error) {
 	return &Config{
 		AnalyticsInterval:      time.Minute,
 		AnalyticsURL:           "https://analytics.dfinity.build/report",
+		AnalyticsUserData:      "",
 		ArtifactCacheSize:      65536,
 		ArtifactChunkSize:      65536,
 		ArtifactMaxBufferSize:  16777216,

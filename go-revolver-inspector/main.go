@@ -30,6 +30,7 @@ type Report struct {
 	ProcessID int
 	Streams   []string
 	Timestamp int64
+	UserData  string
 	Version   string
 }
 
@@ -104,6 +105,7 @@ func graph(reports map[string]Report, lock *sync.Mutex, ttl time.Duration) http.
 				"ProcessID": report.ProcessID,
 				"Streams":   len(report.Streams),
 				"Timestamp": report.Timestamp,
+				"UserData":  report.UserData,
 				"Version":   report.Version,
 			})
 

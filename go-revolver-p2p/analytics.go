@@ -35,6 +35,7 @@ func (client *client) activateAnalytics() func() {
 			ProcessID int
 			Streams   []string
 			Timestamp int64
+			UserData  string
 			Version   string
 		}
 
@@ -55,6 +56,7 @@ func (client *client) activateAnalytics() func() {
 				Peers:     client.table.Size(),
 				ProcessID: client.config.ProcessID,
 				Timestamp: time.Now().Unix(),
+				UserData:  client.config.AnalyticsUserData,
 				Version:   string(client.config.Version),
 			}
 			for _, addr := range client.host.Addrs() {
