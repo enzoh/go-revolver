@@ -72,5 +72,5 @@
 	"language": "go",
 	"license": "GPL3",
 	"name": "go-revolver-p2p",
-	"version": "0.0.0"
+	"version": "0.1.0"
 }
