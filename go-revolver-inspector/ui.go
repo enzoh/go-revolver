@@ -27,7 +27,6 @@ var HTML = []byte(`<!DOCTYPE html>
 		<link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400" rel="stylesheet" type="text/css">
 
 		<!-- Styles -->
-		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" type="text/css">
 
 		<!-- Custom -->
@@ -43,6 +42,33 @@ var HTML = []byte(`<!DOCTYPE html>
 			font-size: 12px;
 			font-weight: 400;
 			-webkit-font-smoothing: antialiased;
+		}
+
+		h2 {
+			font-size: 30px;
+			font-weight: 700;
+			margin-left: auto;
+			margin-right: auto;
+			position: relative;
+			z-index: 1;
+		}
+
+		h3 {
+			font-size: 24px;
+			font-weight: 400;
+			font-style: italic;
+			margin-left: auto;
+			margin-right: auto;
+			padding-bottom: 15px;
+			position: relative;
+			z-index: 1;
+		}
+
+		input {
+			color: #000;
+			font-family: 'Roboto Mono', monospace;
+			font-size: 14px;
+			font-weight: 400;
 		}
 
 		/**
@@ -133,25 +159,32 @@ var HTML = []byte(`<!DOCTYPE html>
 		}
 
 		/**
-		 * Home
+		 * Network
 		 */
 
-		#home {
+		#network {
 			background-color: #333;
 		}
 
-		.diagram {
+		.canvas {
 			position: absolute;
 			z-index: 1;
 		}
 
+		.nodes circle {
+			z-index: -1;
+		}
 
+		.links line {
+			stroke: #FFF;
+			stroke-opacity: 0.25;
+			stroke-width: 0.25;
+			z-index: -1;
+		}
 
-
-
-
-
-
+		.console {
+			margin-top: 56px;
+		}
 
 		.tooltip {
 			text-align: left;
@@ -159,86 +192,26 @@ var HTML = []byte(`<!DOCTYPE html>
 			z-index: 0;
 		}
 
-
 		.info {
 			color: #1EFF00;
 			font-family: 'Roboto Mono', monospace;
 			font-size: 14px;
 			font-weight: 400;
 			display: inline;
-			opacity: 0.2
 		}
 
-		.nodes circle,
-		.links line {
-			stroke: #FFF;
-			stroke-opacity: 0.8;
-			stroke-width: 1.2;
-		}
-
-
-
-
-
-		.console {
-			margin-top: 56px;
-		}
-
-
-
-		.test2 {
+		.splash-footer {
 			text-align: center;
 		}
 
-
-		h2 {
-			font-size: 30px;
-			font-weight: 700;
-			margin-left: auto;
-			margin-right: auto;
+		.input-group {
+			position: relative;
+			z-index: 1;
 		}
-
-		h3 {
-			font-size: 24px;
-			font-weight: 400;
-			font-style: italic;
-			margin-left: auto;
-			margin-right: auto;
-		}
-
-
-
-
-
-
-
-
-
-			
-
-
-
-
-
-
-
-
 
 		</style>
 
 	</head>
-
-
-
-
-
-
-
-
-
-
-
-
 
 	<!-- Body -->
 	<body>
@@ -247,242 +220,184 @@ var HTML = []byte(`<!DOCTYPE html>
 
 			<!-- Navigation -->
 			<nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
+
 				<div class="container">
+
 					<div class="navbar-header">
+
 						<a class="navbar-brand" href="/">
 							<img alt="" src="https://s3-us-west-2.amazonaws.com/dfinity/images/logo.svg">
 							<span>DFINITY</span>
 						</a>
+
 						<button class="navbar-toggle" data-target="#navbar" data-toggle="collapse" type="button">
 							<span class="sr-only">Toggle Navigation</span>
 							<span class="icon-bar"></span>
 							<span class="icon-bar"></span>
 							<span class="icon-bar"></span>
 						</button>
+
 					</div>
+
 					<div class="navbar-collapse collapse" id="navbar">
 						<ul class="nav navbar-nav navbar-right">
-							<li><a href="#home">Home</a></li>
+							<li><a href="#network">Network</a></li>
 						</ul>
 					</div>
+
 				</div>
+
 			</nav>
 
-			<!-- Diagram -->
-			<svg class="diagram" width="1400" height="1400" viewBox="0 0 1400 2100" preserveAspectRatio="xMidYMid"></svg>
+			<!-- Canvas -->
+			<svg class="canvas" width="900" height="900" viewBox="0 0 900 1350" preserveAspectRatio="xMidYMid"></svg>
 
-			<!-- Home -->
-			<section id="home">
+			<!-- Network -->
+			<section id="network">
+
 				<div class="container">
 
-
-
-
-					<div class="row test1">
+					<div class="row splash-body">
 						<div class="col-sm-6">
 							<div class="console hidden-xs hidden-sm"></div>
 						</div>
 					</div>
 
 
-					<div class="row test2">
-						<h2>The Decentralized Cloud<h2>
-						<h3>A scalable, tamperproof<br>blockchain computer network<h3>
-						<br>
-						<i class="fa fa-arrow-down" aria-hidden="true"></i>
+					<div class="row splash-footer">
+						<h2>The Decentralized Cloud</h2>
+						<h3>A scalable, tamperproof<br>blockchain computer network</h3>
+						<div class="col-sm-3"></div>
+						<div class="col-sm-6">
+							<div class="input-group">
+								<span class="input-group-addon">Beacon</span>
+								<input id="beacon" type="text" class="form-control input-md"/>
+							</div>
+						</div>
+						<div class="col-sm-3"></div>
 					</div>
 
-
 				</div>
+
 			</section>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 		</div>
 
-
-
-
-
-
-
-
-
 		<!-- Scripts -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js" type="text/javascript"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js" type="text/javascript"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-smooth-scroll/1.5.4/jquery.smooth-scroll.min.js" type="text/javascript"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js" type="text/javascript"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.5/typed.min.js" type="text/javascript"></script>
 		<script>
 		(function($) {
 
-			function setChartSize() {
-				$('.diagram').attr('height', $(window).height());
-				$('.diagram').attr('width' , $(window).width());
-				$('.test1').css('height', $(window).height() * 0.6);
-				$('.test2').css('height', $(window).height() * 0.4);
+			function resize() {
+
+				$('.splash-body').css('height', $(window).height() * 0.6);
+				$('.splash-footer').css('height', $(window).height() * 0.4);
+
+				$('.canvas').attr('height', $(window).height());
+				$('.canvas').attr('width', $(window).width());
+
 			}
 
 			$(window).load(function() {
-				setChartSize('.diagram');
+				resize('.canvas');
 			});
 
 			$(document).ready(function() {
 
+				var navbar = $('.navbar');
+				var navbar_height = navbar.height();
 
-
-
-
-
-
-
-
-
-		/**
-		 * Navigation
-		 */
-
-		var navbar = $('.navbar');
-		var navbar_height = navbar.height();
-
-		// Collapse navigation on mobile devices.
-		if ($(window).width() <= 752) {
-			navbar.addClass('custom-collapse');
-		}
-		$(window).resize(function() {
-			if ($(this).width() <= 752) {
-				navbar.addClass('custom-collapse');
-			} else {
-				navbar.removeClass('custom-collapse');
-			}
-		});
-
-		// Change color based on scroll position.
-		$(window).scroll(function() {
-			if ($(this).scrollTop() > navbar_height) {
-				navbar.addClass('navbar-color');
-			} else {
-				navbar.removeClass('navbar-color');
-			}
-		});
-
-		// Change focus based on scroll position.
-		$(window).scrollspy({
-			target: '.navbar-custom',
-			offset: 50
-		});
-
-		// Navigate to scroll position on click.
-		$('a[href*=#]').bind('click', function(e) {
-			e.preventDefault();
-			var anchor = $(this);
-			$('html, body').stop().animate({
-				scrollTop: $(anchor.attr('href')).offset().top
-			}, 500);
-		});
-
-
-
-
-
-
-
-
-
-
-
-
+				if ($(window).width() <= 752) {
+					navbar.addClass('custom-collapse');
+				}
 
 				$(window).resize(function() {
-					setChartSize('.diagram');
+					if ($(this).width() <= 752) {
+						navbar.addClass('custom-collapse');
+					} else {
+						navbar.removeClass('custom-collapse');
+					}
 				});
 
-				var svg = d3.select('.diagram'),
-					width = +svg.attr('width'),
-					height = +svg.attr('height');
+				$(window).scroll(function() {
+					if ($(this).scrollTop() > navbar_height) {
+						navbar.addClass('navbar-color');
+					} else {
+						navbar.removeClass('navbar-color');
+					}
+				});
 
-				var color = d3.scaleOrdinal(d3.schemeCategory20);
+				$(window).scrollspy({
+					target: '.navbar-custom',
+					offset: 50
+				});
+
+				$('a[href*=#]').bind('click', function(e) {
+					e.preventDefault();
+					var anchor = $(this);
+					$('html, body').stop().animate({
+						scrollTop: $(anchor.attr('href')).offset().top
+					}, 500);
+				});
+
+				$(window).resize(function() {
+					resize('.canvas');
+				});
+
+				var svg = d3.select('.canvas'), width = +svg.attr('width'), height = +svg.attr('height');
+				var tip = d3.select('.terminal').append('div').attr('class', 'tooltip');
 
 				var simulation = d3.forceSimulation()
-					.force('link', d3.forceLink().id(function(d) { return d.NodeID; }))
+					.force('center', d3.forceCenter(width / 2, height / 2))
 					.force('charge', d3.forceManyBody())
-					.force('center', d3.forceCenter(width / 2, height / 2));
-
-				var tip = d3.select('.console')
-					.append('div')
-					.attr('class', 'tooltip');
-
-				function mouseover(d) {
-
-					tip
-						.transition()
-						.duration(200)
-						.style('opacity', 1);
-
-					tip.html('<span class="info"></span>');
-
-					var render = new Typed('.info', {
-						contentType: 'html',
-						loop: false,
-						loopCount: false,
-						onComplete: function() {
-							$('.typed-cursor').css('display', 'none')
-						},
-						restart: false,
-						strings: [
-							'ClusterID: ' + d.ClusterID + '<br/>ProcessID: ' + d.ProcessID + '<br/>NodeID: ' + d.NodeID + '<br/>Addresses:<br/>- ' + d.Addrs.join('<br/>- ') + '<br/>Peers: ' + d.Peers + '<br/>Streams: ' + d.Streams + '<br/>Network: ' + d.Network + '<br/>Version: ' + d.Version
-						],
-						typeSpeed: 0,
-					});
-
-				}
-
-				function mouseout(d) {
-
-					tip
-						.transition()
-						.duration(500)
-						.style('opacity', 0);
-
-				}
-
-				function start(d) {
-					if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-					d.fx = d.x;
-					d.fy = d.y;
-				}
+					.force('link', d3.forceLink().id(function(d) { return d.NodeID; }));
 
 				function drag(d) {
 					d.fx = d3.event.x;
 					d.fy = d3.event.y;
 				}
 
+				function start(d) {
+					if (!d3.event.active) {
+						simulation.alphaTarget(0.3).restart();
+					}
+					d.fx = d.x;
+					d.fy = d.y;
+				}
+
 				function end(d) {
-					if (!d3.event.active) simulation.alphaTarget(0);
+					if (!d3.event.active) {
+						simulation.alphaTarget(0);
+					}
 					d.fx = null;
 					d.fy = null;
 				}
 
-				d3.json('/graph', function(error, graph) {
+				function mouseover(d) {
+					tip.transition().duration(100).style('opacity', 1);
+					tip.html(
+						'<span class="info">NodeID: ' +
+						d.NodeID +
+						'<br/>Addresses:<br/>- ' +
+						d.Addrs.join('<br/>- ') +
+						'<br/>Network: ' +
+						d.Network +
+						'<br/>Version: ' +
+						d.Version +
+						'</span>'
+					);
+				}
 
-					if (error) throw error;
+				function mouseout(d) {
+					tip.transition().duration(500).style('opacity', 0);
+				}
+
+				d3.json('https://testnet.london.dfinity.build/api/v1/graph', function(err, graph) {
+
+					if (err) throw err;
 
 					var link = svg
 						.append('g')
@@ -490,8 +405,7 @@ var HTML = []byte(`<!DOCTYPE html>
 						.selectAll('line')
 						.data(graph.links)
 						.enter()
-						.append('line')
-						.attr('stroke-width', function(d) { return 1; });
+						.append('line');
 
 					var node = svg
 						.append('g')
@@ -500,36 +414,98 @@ var HTML = []byte(`<!DOCTYPE html>
 						.data(graph.nodes)
 						.enter()
 						.append('circle')
+						.attr('data-bls-public-key', function(d, i) { return d.UserData; })
+						.attr('fill', function(d, i) { return '#525252'; })
 						.attr('r', 5)
-						.attr('fill', function(d, i) { return color(i); })
 						.on('mouseover', mouseover)
 						.on('mouseout', mouseout)
 						.call(d3.drag()
-							.on('start', start)
 							.on('drag', drag)
+							.on('start', start)
 							.on('end', end));
 
-					function ticked() {
+					function tick() {
 
-						link
-							.attr('x1', function(d) { return d.source.x; })
-							.attr('y1', function(d) { return d.source.y; })
-							.attr('x2', function(d) { return d.target.x; })
-							.attr('y2', function(d) { return d.target.y; });
+						link.attr('x1', function(d) {
+							return d.source.x;
+						}).attr('y1', function(d) {
+							return d.source.y;
+						}).attr('x2', function(d) {
+							return d.target.x;
+						}).attr('y2', function(d) {
+							return d.target.y;
+						});
 
-						node
-							.attr('cx', function(d) { return d.x; })
-							.attr('cy', function(d) { return d.y; });
+						node.attr('cx', function(d) {
+							return d.x;
+						}).attr('cy', function(d) {
+							return d.y;
+						});
 
 					}
 
-					simulation
-						.nodes(graph.nodes)
-						.on('tick', ticked);
+					simulation.nodes(graph.nodes).on('tick', tick);
+					simulation.force('link').links(graph.links);
 
-					simulation
-						.force('link')
-						.links(graph.links);
+				});
+
+				$.ajax({
+
+					error: function() {
+						console.error('Cannot download genesis block ...');
+					},
+
+					success: function(genesis) {
+
+						if (genesis == null) {
+							console.log('Awaiting genesis block ...');
+							return;
+						}
+
+						var event;
+						var block;
+						var group;
+
+						var miners = genesis.block.setup[0];
+						var groups = genesis.block.setup[1];
+						var matrix = new Array(groups.length);
+						var source = new EventSource('https://worker.london.dfinity.build/api/v1/block/events');
+
+						for (i = 0; i < groups.length; i++) {
+							matrix[i] = new Array(groups[i].groupMembers.length);
+							for (j = 0; j < groups[i].groupMembers.length; j++) {
+								matrix[i][j] = miners[groups[i].groupMembers[j][0]];
+							}
+						}
+
+						source.addEventListener('message', function(message) {
+
+							event = JSON.parse(message.data);
+							block = event.block;
+							group = event.group;
+
+							$('#beacon').val(block.beacon);
+
+							var key;
+							$('circle').attr('fill', '#525252');
+							$('circle').each(function() {
+								key = $(this).data('bls-public-key');
+								if (matrix[group].includes(key)) {
+									$(this).attr('fill', '#1EFF00');
+								}
+							});
+
+						}, false);
+
+						source.addEventListener('error', function(err) {
+							console.error(err);
+						}, false);
+
+					},
+
+					timeout: 30000,
+					type: 'GET',
+					url: 'https://worker.london.dfinity.build/api/v1/block/genesis',
 
 				});
 
