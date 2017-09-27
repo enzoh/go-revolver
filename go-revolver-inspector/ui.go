@@ -263,10 +263,9 @@ var HTML = []byte(`<!DOCTYPE html>
 						</div>
 					</div>
 
-
 					<div class="row splash-footer">
 						<h2>The Decentralized Cloud</h2>
-						<h3>A scalable, tamperproof<br>blockchain computer network</h3>
+						<h3>A scalable, tamperproof<br>blockchain computer</h3>
 						<div class="col-sm-3"></div>
 						<div class="col-sm-6">
 							<div class="input-group">
