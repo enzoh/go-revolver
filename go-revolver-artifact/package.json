@@ -6,9 +6,9 @@
 	"gx": {
 		"dvcsimport": "github.com/dfinity/go-revolver/go-revolver-artifact"
 	},
-	"gxVersion": "0.11.0",
+	"gxVersion": "0.12.1",
 	"language": "go",
-	"license": "GPL3",
+	"license": "GPL-3",
 	"name": "go-revolver-artifact",
-	"version": "0.1.0"
+	"version": "0.2.0"
 }
