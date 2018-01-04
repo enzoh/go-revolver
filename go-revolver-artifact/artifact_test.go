@@ -1,8 +1,8 @@
 /**
  * File        : artifact_test.go
  * Description : Unit tests.
- * Copyright   : Copyright (c) 2017 DFINITY Stiftung. All rights reserved.
- * Maintainer  : Enzo Haussecker <enzo@string.technology>
+ * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
+ * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Stable
  */
 
@@ -10,22 +10,21 @@ package artifact
 
 import (
 	"bytes"
-	"math/rand"
 	"testing"
 )
 
 // Show that we can create an artifact from a byte slice.
 func TestFromToBytes(test *testing.T) {
-	data1 := make([]byte, 32)
-	_, err := rand.Read(data1)
+	from := []byte("This is a test.")
+	artifact, err := FromBytes(from, true)
 	if err != nil {
 		test.Fatal(err)
 	}
-	data2, err := ToBytes(FromBytes(data1))
+	to, err := ToBytes(artifact)
 	if err != nil {
 		test.Fatal(err)
 	}
-	if !bytes.Equal(data1, data2) {
+	if !bytes.Equal(from, to) {
 		test.Fatal("Corrupt artifact!")
 	}
 }
