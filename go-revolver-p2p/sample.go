@@ -1,8 +1,8 @@
 /**
  * File        : sample.go
  * Description : Service for sampling routing tables.
- * Copyright   : Copyright (c) 2017 DFINITY Stiftung. All rights reserved.
- * Maintainer  : Enzo Haussecker <enzo@string.technology>
+ * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
+ * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Experimental
  */
 
@@ -12,10 +12,10 @@ import (
 	"encoding/json"
 	"math/rand"
 
+	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
+	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
-	"gx/ipfs/QmUEoLmhwH2CkiwHkfHVNeHm9WtMAxTh7jjUQAMRs1rNDe/go-revolver-util"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
-	"gx/ipfs/QmahYsGWry85Y7WUe2SX5G4JkH2zifEQAUtJVLZ24aC9DF/go-libp2p-net"
 )
 
 // Get a random sample of peers from the routing table of a peer.

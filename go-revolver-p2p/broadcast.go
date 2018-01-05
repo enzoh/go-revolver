@@ -1,8 +1,8 @@
 /**
  * File        : broadcast.go
  * Description : Artifact broadcasting module.
- * Copyright   : Copyright (c) 2017 DFINITY Stiftung. All rights reserved.
- * Maintainer  : Enzo Haussecker <enzo@string.technology>
+ * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
+ * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Experimental
  */
 
@@ -12,9 +12,9 @@ import (
 	"io"
 	"sort"
 
-	"gx/ipfs/QmUEoLmhwH2CkiwHkfHVNeHm9WtMAxTh7jjUQAMRs1rNDe/go-revolver-util"
+	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
+	"gx/ipfs/QmUx7Xw6cWUtdt8spHhSFcyQQguBckzBF6omDp8Gc1Vefv/go-revolver-artifact"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
-	"gx/ipfs/QmZMeWroC7S4X8183A3TyGrzgsGjMWaBMedXyox1GUAvej/go-revolver-artifact"
 )
 
 // Activate the artifact broadcast.
@@ -33,9 +33,13 @@ func (client *client) activateBroadcast() func() {
 			case <-notify:
 				return
 			case data := <-client.send:
-				object := artifact.FromBytes(data)
-				client.artifacts.Add(object.Checksum(), object.Size())
-				client.broadcast(object)
+				object, err := artifact.FromBytes(data, false)
+				if err != nil {
+					client.logger.Warning("Cannot create artifact", err)
+				} else {
+					client.artifacts.Add(object.Checksum(), object.Size())
+					client.broadcast(object)
+				}
 			}
 		}
 	}()
@@ -46,26 +50,18 @@ func (client *client) activateBroadcast() func() {
 }
 
 // Broadcast an artifact.
-func (client *client) broadcast(artifact artifact.Artifact) {
+func (client *client) broadcast(object artifact.Artifact) {
 
 	// Get the artifact metadata.
-	var metadata [44]byte
-
-	checksum := artifact.Checksum()
-	size := util.EncodeBigEndianUInt32(artifact.Size())
-	timestamp := util.EncodeBigEndianInt64(artifact.Timestamp().UTC().UnixNano())
-
-	copy(metadata[00:], checksum[:])
-	copy(metadata[32:], size[:])
-	copy(metadata[36:], timestamp[:])
+	metadata := artifact.EncodeMetadata(object)
 
 	// Calculate the number of chunks to transfer.
-	chunks := int((artifact.Size()+client.config.ArtifactChunkSize-1)/
+	chunks := int((object.Size()+client.config.ArtifactChunkSize-1)/
 		client.config.ArtifactChunkSize + 1)
 
 	// Create a sorted exclude list from the witness cache.
 	var exclude peer.IDSlice
-	witnesses, exists := client.witnesses.Get(checksum)
+	witnesses, exists := client.witnesses.Get(object.Checksum())
 	if exists {
 		for _, id := range witnesses.([]peer.ID) {
 			exclude = append(exclude, id)
@@ -87,7 +83,7 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	)
 
 	// Send the artifact in chunks.
-	leftover := artifact.Size()
+	leftover := object.Size()
 	for i := 1; i < chunks; i++ {
 
 		// Create a chunk.
@@ -99,10 +95,10 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 			data = make([]byte, client.config.ArtifactChunkSize)
 			leftover -= client.config.ArtifactChunkSize
 		}
-		_, err := io.ReadFull(artifact, data)
+		_, err := io.ReadFull(object, data)
 		if err != nil {
 			client.logger.Warning("Cannot read artifact")
-			artifact.Disconnect()
+			object.Disconnect()
 			return
 		}
 
@@ -142,6 +138,6 @@ func (client *client) broadcast(artifact artifact.Artifact) {
 	}
 
 	// Close the artifact.
-	artifact.Close()
+	object.Close()
 
 }

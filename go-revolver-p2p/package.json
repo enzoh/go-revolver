@@ -8,9 +8,9 @@
 	},
 	"gxDependencies": [
 		{
-			"hash": "QmZyngpQxUGyx1T2bzEcst6YzERkvVwDzBMbsSQF4f1smE",
+			"hash": "QmefgzMbKZYsmHFkLqxgaTBG9ypeEjrdWRD5WXH4j1cWDL",
 			"name": "go-libp2p",
-			"version": "4.5.2"
+			"version": "5.0.5"
 		},
 		{
 			"hash": "QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo",
@@ -18,14 +18,14 @@
 			"version": "1.5.0"
 		},
 		{
-			"hash": "QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w",
+			"hash": "QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL",
 			"name": "go-libp2p-kbucket",
-			"version": "2.1.12"
+			"version": "2.1.13"
 		},
 		{
-			"hash": "QmahYsGWry85Y7WUe2SX5G4JkH2zifEQAUtJVLZ24aC9DF",
+			"hash": "QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1",
 			"name": "go-libp2p-net",
-			"version": "1.6.12"
+			"version": "2.0.0"
 		},
 		{
 			"hash": "QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB",
@@ -43,9 +43,9 @@
 			"version": "1.0.0"
 		},
 		{
-			"hash": "QmVJefKHXEx28RFpmj5GeRg43AqeBH3npPwvgJ875fBPm7",
+			"hash": "QmdQFrFnPrKRQtpeHKjZ3cVNwxmGKKS2TvhJTuN9C9yduh",
 			"name": "go-libp2p-swarm",
-			"version": "1.7.4"
+			"version": "2.0.5"
 		},
 		{
 			"hash": "QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji",
@@ -53,24 +53,24 @@
 			"version": "1.2.4"
 		},
 		{
-			"hash": "QmZMeWroC7S4X8183A3TyGrzgsGjMWaBMedXyox1GUAvej",
+			"hash": "QmUx7Xw6cWUtdt8spHhSFcyQQguBckzBF6omDp8Gc1Vefv",
 			"name": "go-revolver-artifact",
-			"version": "0.1.0"
+			"version": "0.2.1"
 		},
 		{
-			"hash": "QmS4riunERcveYZL7ZtqajnxTX3FxmCboYf784kWwyr78H",
+			"hash": "QmWpq6PG6EjuY7zbsbETTe2ufQUVwLuxeuC9qyma1cUoxq",
 			"name": "go-revolver-streamstore",
-			"version": "0.1.0"
+			"version": "0.2.0"
 		},
 		{
-			"hash": "QmUEoLmhwH2CkiwHkfHVNeHm9WtMAxTh7jjUQAMRs1rNDe",
+			"hash": "QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3",
 			"name": "go-revolver-util",
-			"version": "0.1.0"
+			"version": "0.2.0"
 		}
 	],
-	"gxVersion": "0.11.0",
+	"gxVersion": "0.12.1",
 	"language": "go",
-	"license": "GPL3",
+	"license": "GPL-3",
 	"name": "go-revolver-p2p",
-	"version": "0.1.0"
+	"version": "0.2.0"
 }

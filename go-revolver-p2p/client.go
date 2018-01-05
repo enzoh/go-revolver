@@ -1,8 +1,8 @@
 /**
  * File        : client.go
  * Description : High-level client interface.
- * Copyright   : Copyright (c) 2017 DFINITY Stiftung. All rights reserved.
- * Maintainer  : Enzo Haussecker <enzo@string.technology>
+ * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
+ * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Experimental
  */
 
@@ -18,18 +18,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/enzoh/go-logging"
-	"github.com/hashicorp/golang-lru"
-
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
-	"gx/ipfs/QmS4riunERcveYZL7ZtqajnxTX3FxmCboYf784kWwyr78H/go-revolver-streamstore"
-	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket"
-	"gx/ipfs/QmVU26BGUSt3LkbWmoH7dP16mNz5VVRg4hDmWZBHAkq97w/go-libp2p-kbucket/keyspace"
+	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
+	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket/keyspace"
+	"gx/ipfs/QmWpq6PG6EjuY7zbsbETTe2ufQUVwLuxeuC9qyma1cUoxq/go-revolver-streamstore"
 	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-	"gx/ipfs/QmZyngpQxUGyx1T2bzEcst6YzERkvVwDzBMbsSQF4f1smE/go-libp2p/p2p/host/basic"
 	"gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
+	"gx/ipfs/QmefgzMbKZYsmHFkLqxgaTBG9ypeEjrdWRD5WXH4j1cWDL/go-libp2p/p2p/host/basic"
+
+	"github.com/enzoh/go-logging"
+	"github.com/hashicorp/golang-lru"
 )
 
 type Config struct {
@@ -198,8 +198,8 @@ func (config *Config) new() (*client, func(), error) {
 	if client.config.ArtifactCacheSize <= 0 {
 		return nil, nil, errors.New("Artifact cache size must be a positive integer.")
 	}
-	if client.config.ArtifactChunkSize <= 44 {
-		return nil, nil, errors.New("Artifact chunk size must be an integer greater than forty-four.")
+	if client.config.ArtifactChunkSize <= 45 {
+		return nil, nil, errors.New("Artifact chunk size must be an integer greater than forty-five.")
 	}
 	if client.config.ArtifactMaxBufferSize <= 0 {
 		return nil, nil, errors.New("Artifact max buffer size must be a positive integer.")
