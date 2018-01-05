@@ -14,6 +14,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"io"
+	"io/ioutil"
 	"time"
 
 	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
@@ -110,35 +111,30 @@ func New(reader io.Reader, checksum [32]byte, compression bool, size uint32, tim
 // Create an artifact from a byte slice.
 func FromBytes(data []byte, compression bool) (Artifact, error) {
 
-	var (
-		buffer bytes.Buffer
-		reader io.Reader
-	)
+	var buf bytes.Buffer
 
 	if compression {
 
-		writer, err := gzip.NewWriterLevel(&buffer, gzip.BestSpeed)
+		writer, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
 		if err != nil {
 			return nil, err
 		}
-		defer writer.Close()
 
 		writer.Write(data)
 		writer.Flush()
-
-		reader = bytes.NewReader(buffer.Bytes())
+		writer.Close()
 
 	} else {
 
-		reader = bytes.NewReader(data)
+		buf.Write(data)
 
 	}
 
 	return New(
-		reader,
+		&buf,
 		sha256.Sum256(data),
 		compression,
-		uint32(len(data)),
+		uint32(buf.Len()),
 		time.Now(),
 	), nil
 
@@ -149,25 +145,22 @@ func FromBytes(data []byte, compression bool) (Artifact, error) {
 func ToBytes(artifact Artifact) ([]byte, error) {
 
 	data := make([]byte, artifact.Size())
+	_, err := io.ReadFull(artifact, data)
+	if err != nil {
+		artifact.Disconnect()
+		return nil, err
+	}
 
 	if artifact.Compression() {
 
-		reader, err := gzip.NewReader(artifact)
+		reader, err := gzip.NewReader(bytes.NewBuffer(data))
 		if err != nil {
 			artifact.Disconnect()
 			return nil, err
 		}
 		defer reader.Close()
 
-		_, err = io.ReadFull(reader, data)
-		if err != nil {
-			artifact.Disconnect()
-			return nil, err
-		}
-
-	} else {
-
-		_, err := io.ReadFull(artifact, data)
+		data, err = ioutil.ReadAll(reader)
 		if err != nil {
 			artifact.Disconnect()
 			return nil, err
