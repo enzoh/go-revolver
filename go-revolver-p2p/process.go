@@ -33,7 +33,7 @@ Processing:
 		// Read the artifact metadata.
 		_, err := io.ReadFull(stream, metadata[:])
 		if err != nil {
-			if err == io.EOF {
+			if isProbableEOF(err) {
 				client.logger.Debug("Disconnecting from", pid)
 			} else {
 				client.logger.Warning("Cannot get artifact metadata from", pid, err)
@@ -59,7 +59,7 @@ Processing:
 			client.artifactsLock.Unlock()
 			_, err = io.CopyN(ioutil.Discard, stream, int64(size))
 			if err != nil {
-				if err == io.EOF {
+				if isProbableEOF(err) {
 					client.logger.Debug("Disconnecting from", pid)
 				} else {
 					client.logger.Warning("Cannot read artifact from", pid, err)
@@ -77,7 +77,7 @@ Processing:
 		object := artifact.New(stream, checksum, compression, size, timestamp)
 		data, err := artifact.ToBytes(object)
 		if err != nil {
-			if err == io.EOF {
+			if isProbableEOF(err) {
 				client.logger.Debug("Disconnecting from", pid)
 			} else {
 				client.logger.Warning("Cannot read artifact from", pid, err)
@@ -107,4 +107,16 @@ Processing:
 
 	client.streamstore.Remove(pid)
 
+}
+
+// Check if an error resembles a connection termination scenario that would
+// justify assuming that the watch is empty.
+func isProbableEOF(err error) bool {
+	switch {
+	case err == io.EOF:
+		return true
+	case err.Error() == "connection reset":
+		return true
+	}
+	return false
 }
