@@ -15,6 +15,8 @@ import (
 	"errors"
 	"io"
 	"time"
+
+	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
 )
 
 // A simple interface for reading artifacts.
@@ -101,7 +103,7 @@ func New(reader io.Reader, checksum [32]byte, compression bool, size uint32, tim
 		compression,
 		reader,
 		size,
-		timestamp,
+		timestamp.UTC(),
 	}
 }
 
@@ -181,5 +183,48 @@ func ToBytes(artifact Artifact) ([]byte, error) {
 	artifact.Close()
 
 	return data, nil
+
+}
+
+// Encode the metadata of an artifact.
+func EncodeMetadata(artifact Artifact) (metadata [45]byte) {
+
+	checksum := artifact.Checksum()
+	copy(metadata[00:], checksum[:])
+
+	if artifact.Compression() {
+		metadata[32] = 0x01
+	}
+
+	size := util.EncodeBigEndianUInt32(artifact.Size())
+	copy(metadata[33:], size[:])
+
+	timestamp := util.EncodeBigEndianInt64(artifact.Timestamp().UnixNano())
+	copy(metadata[37:], timestamp[:])
+
+	return metadata
+
+}
+
+// Decode the metadata of an artifact.
+func DecodeMetadata(metadata [45]byte) (checksum [32]byte, compression bool, size uint32, timestamp time.Time) {
+
+	var (
+		buf4 [4]byte
+		buf8 [8]byte
+	)
+
+	copy(checksum[:], metadata[00:])
+
+	compression = metadata[32] > 0x00
+
+	copy(buf4[:], metadata[33:])
+	size = util.DecodeBigEndianUInt32(buf4)
+
+	copy(buf8[:], metadata[37:])
+	nanos := util.DecodeBigEndianInt64(buf8)
+	timestamp = time.Unix(nanos/1000000000, nanos%1000000000).UTC()
+
+	return
 
 }
