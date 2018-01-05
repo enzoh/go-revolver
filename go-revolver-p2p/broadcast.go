@@ -13,7 +13,7 @@ import (
 	"sort"
 
 	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
-	"gx/ipfs/QmUx7Xw6cWUtdt8spHhSFcyQQguBckzBF6omDp8Gc1Vefv/go-revolver-artifact"
+	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 )
 
@@ -33,7 +33,7 @@ func (client *client) activateBroadcast() func() {
 			case <-notify:
 				return
 			case data := <-client.send:
-				object, err := artifact.FromBytes(data, false)
+				object, err := artifact.FromBytes(data, client.config.Compression)
 				if err != nil {
 					client.logger.Warning("Cannot create artifact", err)
 				} else {

@@ -41,6 +41,7 @@ type Config struct {
 	ArtifactMaxBufferSize  uint32
 	ArtifactQueueSize      int
 	ClusterID              int
+	Compression            bool
 	DisableAnalytics       bool
 	DisableBroadcast       bool
 	DisableNATPortMap      bool
@@ -79,6 +80,7 @@ func DefaultConfig() (*Config, error) {
 		ArtifactMaxBufferSize:  16777216,
 		ArtifactQueueSize:      8192,
 		ClusterID:              0,
+		Compression:            false,
 		DisableAnalytics:       false,
 		DisableBroadcast:       false,
 		DisableNATPortMap:      false,

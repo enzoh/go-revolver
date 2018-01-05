@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
-	"gx/ipfs/QmUx7Xw6cWUtdt8spHhSFcyQQguBckzBF6omDp8Gc1Vefv/go-revolver-artifact"
+	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 )
 
@@ -30,7 +30,7 @@ func (client *client) process(stream net.Stream) {
 Processing:
 	for {
 
-		// Get the artifact metadata.
+		// Read the artifact metadata.
 		_, err := io.ReadFull(stream, metadata[:])
 		if err != nil {
 			if err == io.EOF {
@@ -47,7 +47,7 @@ Processing:
 		latency := time.Since(timestamp)
 		client.logger.Debugf("Receiving %d byte artifact with checksum %s and latency %s from %v", size, code, latency, pid)
 
-		// Check if the client can create a buffer that large.
+		// Check if the client can buffer the artifact.
 		if size > client.config.ArtifactMaxBufferSize {
 			client.logger.Warningf("Cannot accept %d byte artifact with checksum %s from %v", size, code, pid)
 			break Processing
