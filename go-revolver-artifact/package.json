@@ -17,5 +17,5 @@
 	"language": "go",
 	"license": "GPL-3",
 	"name": "go-revolver-artifact",
-	"version": "0.2.1"
+	"version": "0.2.2"
 }
