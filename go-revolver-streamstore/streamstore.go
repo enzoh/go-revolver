@@ -1,8 +1,8 @@
 /**
  * File        : streamstore.go
  * Description : High-level stream store interface.
- * Copyright   : Copyright (c) 2017 DFINITY Stiftung. All rights reserved.
- * Maintainer  : Enzo Haussecker <enzo@string.technology>
+ * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
+ * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Stable
  */
 
@@ -14,8 +14,8 @@ import (
 	"sort"
 	"sync"
 
+	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
-	"gx/ipfs/QmahYsGWry85Y7WUe2SX5G4JkH2zifEQAUtJVLZ24aC9DF/go-libp2p-net"
 
 	"github.com/enzoh/go-logging"
 )
