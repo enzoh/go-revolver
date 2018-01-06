@@ -119,14 +119,20 @@ type Client interface {
 	// Get the peer count of a client.
 	PeerCount() int
 
-	// Get the artifact receive queue of a client.
-	Receive() chan artifact.Artifact
+	// Get the stream count of a client.
+	StreamCount() int
 
 	// Get the artifact send queue of a client.
 	Send() chan artifact.Artifact
 
-	// Get the stream count of a client.
-	StreamCount() int
+	// Get the artifact receive queue of a client.
+	Receive() chan artifact.Artifact
+
+	// Get the artifact request queue of a client.
+	Request() chan [32]byte
+
+	// Get the artifact response queue of a client.
+	Response() chan struct {Request [32]byte; Response chan artifact.Artifact}
 }
 
 type client struct {
@@ -141,6 +147,8 @@ type client struct {
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
 	receive       chan artifact.Artifact
+	request       chan [32]byte
+	response      chan struct {Request [32]byte; Response chan artifact.Artifact}
 	send          chan artifact.Artifact
 	streamstore   streamstore.Streamstore
 	table         *kbucket.RoutingTable
@@ -163,9 +171,9 @@ func (client *client) PeerCount() int {
 	return client.table.Size()
 }
 
-// Get the artifact receive queue of a client.
-func (client *client) Receive() chan artifact.Artifact {
-	return client.receive
+// Get the stream count of a client.
+func (client *client) StreamCount() int {
+	return client.streamstore.Size()
 }
 
 // Get the artifact send queue of a client.
@@ -173,9 +181,19 @@ func (client *client) Send() chan artifact.Artifact {
 	return client.send
 }
 
-// Get the stream count of a client.
-func (client *client) StreamCount() int {
-	return client.streamstore.Size()
+// Get the artifact receive queue of a client.
+func (client *client) Receive() chan artifact.Artifact {
+	return client.receive
+}
+
+// Get the artifact request queue of a client.
+func (client *client) Request() chan [32]byte {
+	return client.request
+}
+
+// Get the artifact response queue of a client.
+func (client *client) Response() chan struct {Request [32]byte; Response chan artifact.Artifact} {
+	return client.response
 }
 
 // Create a client.
@@ -304,6 +322,8 @@ func (config *Config) new() (*client, func(), error) {
 	// Create the artifact queues.
 	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
+	client.request =  make(chan [32]byte, client.config.ArtifactQueueSize)
+	client.response =  make(chan struct {Request [32]byte; Response chan artifact.Artifact}, client.config.ArtifactQueueSize)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
