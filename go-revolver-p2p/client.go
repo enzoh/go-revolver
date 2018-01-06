@@ -21,6 +21,7 @@ import (
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket/keyspace"
+	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
 	"gx/ipfs/QmWpq6PG6EjuY7zbsbETTe2ufQUVwLuxeuC9qyma1cUoxq/go-revolver-streamstore"
 	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
@@ -41,7 +42,6 @@ type Config struct {
 	ArtifactMaxBufferSize  uint32
 	ArtifactQueueSize      int
 	ClusterID              int
-	Compression            bool
 	DisableAnalytics       bool
 	DisableBroadcast       bool
 	DisableNATPortMap      bool
@@ -80,7 +80,6 @@ func DefaultConfig() (*Config, error) {
 		ArtifactMaxBufferSize:  16777216,
 		ArtifactQueueSize:      8192,
 		ClusterID:              0,
-		Compression:            false,
 		DisableAnalytics:       false,
 		DisableBroadcast:       false,
 		DisableNATPortMap:      false,
@@ -121,10 +120,10 @@ type Client interface {
 	PeerCount() int
 
 	// Get the artifact receive queue of a client.
-	Receive() chan []byte
+	Receive() chan artifact.Artifact
 
 	// Get the artifact send queue of a client.
-	Send() chan []byte
+	Send() chan artifact.Artifact
 
 	// Get the stream count of a client.
 	StreamCount() int
@@ -141,8 +140,8 @@ type client struct {
 	logger        *logging.Logger
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
-	receive       chan []byte
-	send          chan []byte
+	receive       chan artifact.Artifact
+	send          chan artifact.Artifact
 	streamstore   streamstore.Streamstore
 	table         *kbucket.RoutingTable
 	witnesses     *lru.Cache
@@ -165,12 +164,12 @@ func (client *client) PeerCount() int {
 }
 
 // Get the artifact receive queue of a client.
-func (client *client) Receive() chan []byte {
+func (client *client) Receive() chan artifact.Artifact {
 	return client.receive
 }
 
 // Get the artifact send queue of a client.
-func (client *client) Send() chan []byte {
+func (client *client) Send() chan artifact.Artifact {
 	return client.send
 }
 
@@ -303,8 +302,8 @@ func (config *Config) new() (*client, func(), error) {
 	)
 
 	// Create the artifact queues.
-	client.send = make(chan []byte, client.config.ArtifactQueueSize)
-	client.receive = make(chan []byte, client.config.ArtifactQueueSize)
+	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
+	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(

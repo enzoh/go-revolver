@@ -73,18 +73,6 @@ Processing:
 		client.artifacts.Add(checksum, size)
 		client.artifactsLock.Unlock()
 
-		// Consume the artifact.
-		object := artifact.New(stream, checksum, compression, size, timestamp)
-		data, err := artifact.ToBytes(object)
-		if err != nil {
-			if isProbableEOF(err) {
-				client.logger.Debug("Disconnecting from", pid)
-			} else {
-				client.logger.Warning("Cannot read artifact from", pid, err)
-			}
-			break Processing
-		}
-
 		// Update the witnesses of the artifact.
 		client.witnessesLock.Lock()
 		peers, exists := client.witnesses.Get(checksum)
@@ -95,7 +83,8 @@ Processing:
 		client.witnessesLock.Unlock()
 
 		// Queue the artifact.
-		client.receive <- data
+		object := artifact.New(stream, checksum, compression, size, timestamp)
+		client.receive <- object
 
 		// Check if the artifact was invalid.
 		if object.Wait() != 0 {

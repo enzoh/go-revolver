@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
+	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
 )
 
 // Show that a client can broadcast artifacts to its peers.
@@ -47,20 +48,33 @@ func TestBroadcast(test *testing.T) {
 	// Begin the broadcast.
 	for i := 0; i < 10; i++ {
 
-		// Generate a random artifact.
+		// Generate a random byte slice.
 		dataOut := make([]byte, rand.Intn(int(client1.config.ArtifactMaxBufferSize)))
 		_, err = rand.Read(dataOut)
 		if err != nil {
 			test.Fatal(err)
 		}
 
+		// Create an artifact from the byte slice.
+		compress := rand.Intn(2) > 0
+		artifactOut, err := artifact.FromBytes(dataOut, compress)
+		if err != nil {
+			test.Fatal(err)
+		}
+
 		// Send the artifact to the second client.
-		client1.Send() <- dataOut
+		client1.Send() <- artifactOut
 
 		select {
 
 		// Wait for the second client to receive the artifact.
-		case dataIn := <-client2.Receive():
+		case artifactIn := <-client2.Receive():
+
+			// Create a byte slice from the artifact.
+			dataIn, err := artifact.ToBytes(artifactIn)
+			if err != nil {
+				test.Fatal(err)
+			}
 
 			// Verify that the data sent and received is the same.
 			if !bytes.Equal(dataOut, dataIn) {

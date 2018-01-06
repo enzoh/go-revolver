@@ -32,14 +32,9 @@ func (client *client) activateBroadcast() func() {
 			select {
 			case <-notify:
 				return
-			case data := <-client.send:
-				object, err := artifact.FromBytes(data, client.config.Compression)
-				if err != nil {
-					client.logger.Warning("Cannot create artifact", err)
-				} else {
-					client.artifacts.Add(object.Checksum(), object.Size())
-					client.broadcast(object)
-				}
+			case object := <-client.send:
+				client.artifacts.Add(object.Checksum(), object.Size())
+				client.broadcast(object)
 			}
 		}
 	}()

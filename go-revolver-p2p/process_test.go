@@ -10,17 +10,18 @@ package p2p
 
 import (
 	"encoding/hex"
-	"math/rand"
 	"testing"
 	"time"
 
+	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
+	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
 )
 
 // Show that a client cannot receive duplicate artifacts.
 func TestDuplication(test *testing.T) {
 
-	const N = 1000
+	const N = 1024
 
 	// Create a client.
 	client1, shutdown1 := newTestClient(test)
@@ -131,10 +132,13 @@ func TestDuplication(test *testing.T) {
 	// Send artifacts to the second and fourth client.
 	go func() {
 		for i := 0; i < N; i++ {
-			time.Sleep(25 * time.Microsecond)
-			dataOut := make([]byte, 32)
-			rand.Read(dataOut)
-			client1.Send() <- dataOut
+			time.Sleep(time.Millisecond)
+			dataOut := util.EncodeBigEndianInt64(int64(i))
+			artifactOut, err := artifact.FromBytes(dataOut[:], false)
+			if err != nil {
+				test.Fatal(err)
+			}
+			client1.Send() <- artifactOut
 		}
 	}()
 
@@ -145,7 +149,12 @@ func TestDuplication(test *testing.T) {
 		select {
 
 		// Wait for the third client to receive an artifact.
-		case dataIn := <-client3.Receive():
+		case artifactIn := <-client3.Receive():
+
+			dataIn, err := artifact.ToBytes(artifactIn)
+			if err != nil {
+				test.Fatal(err)
+			}
 
 			// Verify that the artifact is not a duplicate.
 			key := hex.EncodeToString(dataIn)
