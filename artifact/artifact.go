@@ -22,12 +22,10 @@ import (
 
 // A simple interface for reading artifacts.
 type Artifact interface {
+	io.ReadCloser
 
 	// Get the purported checksum of an artifact.
 	Checksum() [32]byte
-
-	// Close an artifact.
-	Close()
 
 	// Check if an artifact uses gzip compression.
 	Compression() bool
@@ -43,8 +41,6 @@ type Artifact interface {
 
 	// Wait for a finalizer to close an artifact.
 	Wait() int
-
-	io.Reader
 }
 
 type artifact struct {
@@ -62,8 +58,9 @@ func (artifact *artifact) Checksum() [32]byte {
 }
 
 // Close an artifact.
-func (artifact *artifact) Close() {
+func (artifact *artifact) Close() error {
 	artifact.closer <- 0
+	return nil
 }
 
 // Check if an artifact uses gzip compression.
