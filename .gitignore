@@ -1,4 +1,5 @@
 .DS_Store
-go-revolver-example
-go-revolver-inspector
+example
+inspector
 nohup.out
+.\#*
