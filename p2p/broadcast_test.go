@@ -15,7 +15,8 @@ import (
 	"time"
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
-	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
+
+	"github.com/dfinity/go-revolver/artifact"
 )
 
 // Show that a client can broadcast artifacts to its peers.

@@ -13,9 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
-	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
+
+	"github.com/dfinity/go-revolver/artifact"
+	"github.com/dfinity/go-revolver/util"
 )
 
 // Show that a client cannot receive duplicate artifacts.

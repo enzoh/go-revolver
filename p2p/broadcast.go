@@ -12,9 +12,10 @@ import (
 	"io"
 	"sort"
 
-	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
-	"gx/ipfs/QmVG2ayLLUM54o3CmJNJEyL2Z8tAW9UwfebDAy4ocSwvPV/go-revolver-artifact"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+
+	"github.com/dfinity/go-revolver/artifact"
+	"github.com/dfinity/go-revolver/util"
 )
 
 // Activate the artifact broadcast.

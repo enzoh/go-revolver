@@ -17,7 +17,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"gx/ipfs/QmPbEVvboS8vFGwnesWYzKXNRH82p2gh3SMExNsAycwwe3/go-revolver-util"
+	"github.com/dfinity/go-revolver/util"
 )
 
 // A simple interface for reading artifacts.
