@@ -111,8 +111,8 @@ func TestDuplication(test *testing.T) {
 			select {
 			case <-notify2:
 				return
-			case artifact := <-client2.Receive():
-				client2.Send() <- artifact
+			case artifact := <-client2.receive:
+				client2.send <- artifact
 			}
 		}
 	}()
@@ -123,8 +123,8 @@ func TestDuplication(test *testing.T) {
 			select {
 			case <-notify4:
 				return
-			case artifact := <-client4.Receive():
-				client4.Send() <- artifact
+			case artifact := <-client4.receive:
+				client4.send <- artifact
 			}
 		}
 	}()
@@ -138,7 +138,7 @@ func TestDuplication(test *testing.T) {
 			if err != nil {
 				test.Fatal(err)
 			}
-			client1.Send() <- artifactOut
+			client1.send <- artifactOut
 		}
 	}()
 
@@ -149,7 +149,7 @@ func TestDuplication(test *testing.T) {
 		select {
 
 		// Wait for the third client to receive an artifact.
-		case artifactIn := <-client3.Receive():
+		case artifactIn := <-client3.receive:
 
 			dataIn, err := artifact.ToBytes(artifactIn)
 			if err != nil {

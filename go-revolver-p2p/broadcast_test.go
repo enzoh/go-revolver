@@ -63,12 +63,12 @@ func TestBroadcast(test *testing.T) {
 		}
 
 		// Send the artifact to the second client.
-		client1.Send() <- artifactOut
+		client1.send <- artifactOut
 
 		select {
 
 		// Wait for the second client to receive the artifact.
-		case artifactIn := <-client2.Receive():
+		case artifactIn := <-client2.receive:
 
 			// Create a byte slice from the artifact.
 			dataIn, err := artifact.ToBytes(artifactIn)

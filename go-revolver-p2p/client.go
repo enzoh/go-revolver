@@ -69,7 +69,7 @@ type Config struct {
 	WitnessCacheSize       int
 }
 
-// Get the default configuration parameters of the client.
+// Get the default configuration parameters.
 func DefaultConfig() (*Config, error) {
 	return &Config{
 		AnalyticsInterval:      time.Minute,
@@ -85,54 +85,57 @@ func DefaultConfig() (*Config, error) {
 		DisableNATPortMap:      false,
 		DisablePeerDiscovery:   false,
 		DisableStreamDiscovery: false,
-		IP:                     "0.0.0.0",
-		KBucketSize:            16,
-		LatencyTolerance:       time.Minute,
-		LogFile:                os.Stdout,
-		LogLevel:               logging.INFO,
-		NATMonitorInterval:     time.Second,
-		NATMonitorTimeout:      time.Minute,
-		Network:                "revolver",
-		PingBufferSize:         32,
-		Port:                   4000,
-		ProcessID:              0,
-		RandomSeed:             "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
-		SampleMaxBufferSize:    8192,
-		SampleSize:             4,
-		SeedNodes:              nil,
-		StreamstoreCapacity:    8,
-		StreamstoreQueueSize:   8192,
-		Timeout:                peerstore.TempAddrTTL,
-		Version:                "0.1.0",
-		WitnessCacheSize:       65536,
+		IP:                   "0.0.0.0",
+		KBucketSize:          16,
+		LatencyTolerance:     time.Minute,
+		LogFile:              os.Stdout,
+		LogLevel:             logging.INFO,
+		NATMonitorInterval:   time.Second,
+		NATMonitorTimeout:    time.Minute,
+		Network:              "revolver",
+		PingBufferSize:       32,
+		Port:                 4000,
+		ProcessID:            0,
+		RandomSeed:           "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		SampleMaxBufferSize:  8192,
+		SampleSize:           4,
+		SeedNodes:            nil,
+		StreamstoreCapacity:  8,
+		StreamstoreQueueSize: 8192,
+		Timeout:              peerstore.TempAddrTTL,
+		Version:              "0.1.0",
+		WitnessCacheSize:     65536,
 	}, nil
 }
 
 type Client interface {
 
-	// Get the addresses of a client.
-	Addresses() []multiaddr.Multiaddr
+	// List the addresses.
+	Addresses() []string
 
-	// Get the ID of a client.
+	// Get the ID.
 	ID() string
 
-	// Get the peer count of a client.
+	// Get the peer count.
 	PeerCount() int
 
-	// Get the stream count of a client.
+	// Get the stream count.
 	StreamCount() int
 
-	// Get the artifact send queue of a client.
-	Send() chan artifact.Artifact
+	// Send an artifact.
+	Send(artifact.Artifact)
 
-	// Get the artifact receive queue of a client.
-	Receive() chan artifact.Artifact
+	// Receive an artifact.
+	Receive() artifact.Artifact
 
-	// Get the artifact request queue of a client.
-	Request() chan [32]byte
+	// Request an artifact.
+	Request([32]byte) (artifact.Artifact, error)
 
-	// Get the artifact response queue of a client.
-	Response() chan struct {Request [32]byte; Response chan artifact.Artifact}
+	// Respond to an artifact request.
+	Respond() struct {
+		Request  [32]byte
+		Response chan artifact.Artifact
+	}
 }
 
 type client struct {
@@ -147,8 +150,10 @@ type client struct {
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
 	receive       chan artifact.Artifact
-	request       chan [32]byte
-	response      chan struct {Request [32]byte; Response chan artifact.Artifact}
+	respond       chan struct {
+		Request  [32]byte
+		Response chan artifact.Artifact
+	}
 	send          chan artifact.Artifact
 	streamstore   streamstore.Streamstore
 	table         *kbucket.RoutingTable
@@ -156,44 +161,52 @@ type client struct {
 	witnessesLock *sync.Mutex
 }
 
-// Get the addresses of a client.
-func (client *client) Addresses() []multiaddr.Multiaddr {
-	return client.host.Addrs()
+// List the addresses.
+func (client *client) Addresses() []string {
+	addrs := client.host.Addrs()
+	accum := make([]string, len(addrs))
+	for i := range accum {
+		accum[i] = addrs[i].String()
+	}
+	return accum
 }
 
-// Get the ID of a client.
+// Get the ID.
 func (client *client) ID() string {
 	return client.id.Pretty()
 }
 
-// Get the peer count of a client.
+// Get the peer count.
 func (client *client) PeerCount() int {
 	return client.table.Size()
 }
 
-// Get the stream count of a client.
+// Get the stream count.
 func (client *client) StreamCount() int {
 	return client.streamstore.Size()
 }
 
-// Get the artifact send queue of a client.
-func (client *client) Send() chan artifact.Artifact {
-	return client.send
+// Send an artifact.
+func (client *client) Send(artifact artifact.Artifact) {
+	client.send <- artifact
 }
 
-// Get the artifact receive queue of a client.
-func (client *client) Receive() chan artifact.Artifact {
-	return client.receive
+// Receive an artifact.
+func (client *client) Receive() artifact.Artifact {
+	return <-client.receive
 }
 
-// Get the artifact request queue of a client.
-func (client *client) Request() chan [32]byte {
-	return client.request
+// Request an artifact.
+func (client *client) Request(checksum [32]byte) (artifact.Artifact, error) {
+	return nil, errors.New("TODO: Implement request method.")
 }
 
-// Get the artifact response queue of a client.
-func (client *client) Response() chan struct {Request [32]byte; Response chan artifact.Artifact} {
-	return client.response
+// Respond to an artifact request.
+func (client *client) Respond() struct {
+	Request  [32]byte
+	Response chan artifact.Artifact
+} {
+	return <-client.respond
 }
 
 // Create a client.
@@ -322,8 +335,10 @@ func (config *Config) new() (*client, func(), error) {
 	// Create the artifact queues.
 	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
-	client.request =  make(chan [32]byte, client.config.ArtifactQueueSize)
-	client.response =  make(chan struct {Request [32]byte; Response chan artifact.Artifact}, client.config.ArtifactQueueSize)
+	client.respond = make(chan struct {
+		Request  [32]byte
+		Response chan artifact.Artifact
+	}, client.config.ArtifactQueueSize)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
