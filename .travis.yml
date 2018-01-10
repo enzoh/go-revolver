@@ -15,6 +15,9 @@ install:
 - unzip gx.zip -d $GOPATH/src
 - go get github.com/enzoh/go-logging
 - go get github.com/hashicorp/golang-lru
+- go get github.com/dfinity/go-revolver/artifact
+- go get github.com/dfinity/go-revolver/streamstore
+- go get github.com/dfinity/go-revolver/util
 script:
 - pushd p2p
 - go test
