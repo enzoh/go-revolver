@@ -16,6 +16,6 @@ install:
 - go get github.com/enzoh/go-logging
 - go get github.com/hashicorp/golang-lru
 script:
-- pushd go-revolver-p2p
+- pushd p2p
 - go test
 - popd
