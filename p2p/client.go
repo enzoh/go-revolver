@@ -129,13 +129,33 @@ type Client interface {
 	Receive() artifact.Artifact
 
 	// Request an artifact.
-	Request([32]byte) (artifact.Artifact, error)
+	RequestArtifact([32]byte) (artifact.Artifact, error)
 
 	// Respond to an artifact request.
-	Respond() struct {
-		Request  [32]byte
-		Response chan artifact.Artifact
-	}
+	RespondArtifact() ArtifactRequest
+
+	// Respond to a signature request.
+	RespondSignature() SignatureRequest
+
+	// Respond to a signature verification request.
+	RespondVerification() VerificationRequest
+}
+
+type ArtifactRequest struct {
+	Request  [32]byte
+	Response chan artifact.Artifact
+}
+
+type SignatureRequest struct {
+	Message []byte
+	Result  chan []byte
+}
+
+type VerificationRequest struct {
+	Signature []byte
+	Message   []byte
+	PublicKey []byte
+	Result    chan bool
 }
 
 type client struct {
@@ -150,15 +170,14 @@ type client struct {
 	peerstore     peerstore.Peerstore
 	protocol      protocol.ID
 	receive       chan artifact.Artifact
-	respond       chan struct {
-		Request  [32]byte
-		Response chan artifact.Artifact
-	}
+	respond       chan ArtifactRequest
 	send          chan artifact.Artifact
+	signatures    chan SignatureRequest
 	streamstore   streamstore.Streamstore
 	table         *kbucket.RoutingTable
 	witnesses     *lru.Cache
 	witnessesLock *sync.Mutex
+	verifications chan VerificationRequest
 }
 
 // List the addresses.
@@ -197,16 +216,23 @@ func (client *client) Receive() artifact.Artifact {
 }
 
 // Request an artifact.
-func (client *client) Request(checksum [32]byte) (artifact.Artifact, error) {
+func (client *client) RequestArtifact(checksum [32]byte) (artifact.Artifact, error) {
 	return nil, errors.New("TODO: Implement request method.")
 }
 
 // Respond to an artifact request.
-func (client *client) Respond() struct {
-	Request  [32]byte
-	Response chan artifact.Artifact
-} {
+func (client *client) RespondArtifact() ArtifactRequest {
 	return <-client.respond
+}
+
+// Respond to a signature request.
+func (client *client) RespondSignature() SignatureRequest {
+	return <-client.signatures
+}
+
+// Respond to a signature verification request.
+func (client *client) RespondVerification() VerificationRequest {
+	return <-client.verifications
 }
 
 // Create a client.
@@ -335,10 +361,11 @@ func (config *Config) new() (*client, func(), error) {
 	// Create the artifact queues.
 	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
-	client.respond = make(chan struct {
-		Request  [32]byte
-		Response chan artifact.Artifact
-	}, client.config.ArtifactQueueSize)
+	client.respond = make(chan ArtifactRequest, client.config.ArtifactQueueSize)
+
+	// Create the signature and verification queues.
+	client.signatures = make(chan SignatureRequest, 1)
+	client.verifications = make(chan VerificationRequest, 1)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
