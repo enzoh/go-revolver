@@ -36,7 +36,7 @@ func (client *client) ping(peerId peer.ID) error {
 	if err != nil {
 		addrs := client.peerstore.PeerInfo(pid).Addrs
 		client.logger.Debug("Cannot connect to", pid, "at", addrs, err)
-		client.peerstore.SetAddrs(pid, addrs, 0)
+		client.peerstore.ClearAddrs(pid)
 		client.table.Remove(pid)
 		return err
 	}
