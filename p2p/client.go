@@ -18,8 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/enzoh/go-logging"
-	"github.com/hashicorp/golang-lru"
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket/keyspace"
@@ -31,6 +29,8 @@ import (
 
 	"github.com/dfinity/go-revolver/artifact"
 	"github.com/dfinity/go-revolver/streamstore"
+	"github.com/enzoh/go-logging"
+	"github.com/hashicorp/golang-lru"
 )
 
 type Config struct {
@@ -69,8 +69,8 @@ type Config struct {
 	WitnessCacheSize       int
 }
 
-// Get the default configuration parameters.
-func DefaultConfig() (*Config, error) {
+// DefaultConfig -- Get the default configuration parameters.
+func DefaultConfig() *Config {
 	return &Config{
 		AnalyticsInterval:      time.Minute,
 		AnalyticsURL:           "https://analytics.dfinity.build/report",
@@ -85,27 +85,27 @@ func DefaultConfig() (*Config, error) {
 		DisableNATPortMap:      false,
 		DisablePeerDiscovery:   false,
 		DisableStreamDiscovery: false,
-		IP:                   "0.0.0.0",
-		KBucketSize:          16,
-		LatencyTolerance:     time.Minute,
-		LogFile:              os.Stdout,
-		LogLevel:             logging.INFO,
-		NATMonitorInterval:   time.Second,
-		NATMonitorTimeout:    time.Minute,
-		Network:              "revolver",
-		PingBufferSize:       32,
-		Port:                 4000,
-		ProcessID:            0,
-		RandomSeed:           "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
-		SampleMaxBufferSize:  8192,
-		SampleSize:           4,
-		SeedNodes:            nil,
-		StreamstoreCapacity:  8,
-		StreamstoreQueueSize: 8192,
-		Timeout:              peerstore.TempAddrTTL,
-		Version:              "0.1.0",
-		WitnessCacheSize:     65536,
-	}, nil
+		IP:                     "0.0.0.0",
+		KBucketSize:            16,
+		LatencyTolerance:       time.Minute,
+		LogFile:                os.Stdout,
+		LogLevel:               logging.INFO,
+		NATMonitorInterval:     time.Second,
+		NATMonitorTimeout:      time.Minute,
+		Network:                "revolver",
+		PingBufferSize:         32,
+		Port:                   4000,
+		ProcessID:              0,
+		RandomSeed:             "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		SampleMaxBufferSize:    8192,
+		SampleSize:             4,
+		SeedNodes:              nil,
+		StreamstoreCapacity:    8,
+		StreamstoreQueueSize:   8192,
+		Timeout:                peerstore.TempAddrTTL,
+		Version:                "0.1.0",
+		WitnessCacheSize:       65536,
+	}
 }
 
 type Client interface {
@@ -123,124 +123,188 @@ type Client interface {
 	StreamCount() int
 
 	// Send an artifact.
-	Send(artifact.Artifact)
+	Send(artifact artifact.Artifact)
 
 	// Receive an artifact.
 	Receive() artifact.Artifact
 
 	// Request an artifact.
-	RequestArtifact([32]byte) (artifact.Artifact, error)
+	Request(checksum [32]byte) (artifact.Artifact, error)
 
-	// Respond to an artifact request.
-	RespondArtifact() ArtifactRequest
+	// Register an artifact request handler.
+	SetArtifactHandler(handler ArtifactHandler)
 
-	// Respond to a signature request.
-	RespondSignature() SignatureRequest
+	// Register a signature request handler.
+	SetSignatureHandler(handler SignatureHandler)
 
-	// Respond to a signature verification request.
-	RespondVerification() VerificationRequest
+	// Register a verification request handler.
+	SetVerificationHandler(handler VerificationHandler)
 }
 
-type ArtifactRequest struct {
-	Request  [32]byte
-	Response chan artifact.Artifact
-}
+// ArtifactHandler -- This type represents a function that executes when
+// receiving an artifact request. The function can be registered as a callback
+// using SetArtifactHandler.
+type ArtifactHandler func(checksum [32]byte, response chan artifact.Artifact)
 
-type SignatureRequest struct {
-	Message []byte
-	Result  chan []byte
-}
+// SignatureHandler -- This type represents a function that executes when
+// receiving a signature request. The function can be registered as a callback
+// using SetSignatureHandler.
+type SignatureHandler func(message []byte, response chan []byte)
 
-type VerificationRequest struct {
-	Signature []byte
-	Message   []byte
-	PublicKey []byte
-	Result    chan bool
-}
+// VerificationHandler -- This type represents a function that executes when
+// receiving a verification request. The function can be registered as a
+// callback using SetVerificationHandler.
+type VerificationHandler func(signature []byte, message []byte, publicKeys []byte, response chan bool)
 
-type client struct {
-	artifacts     *lru.Cache
-	artifactsLock *sync.Mutex
-	config        *Config
-	context       context.Context
-	host          *basichost.BasicHost
-	id            peer.ID
-	key           keyspace.Key
-	logger        *logging.Logger
-	peerstore     peerstore.Peerstore
-	protocol      protocol.ID
-	receive       chan artifact.Artifact
-	respond       chan ArtifactRequest
-	send          chan artifact.Artifact
-	signatures    chan SignatureRequest
-	streamstore   streamstore.Streamstore
-	table         *kbucket.RoutingTable
-	witnesses     *lru.Cache
-	witnessesLock *sync.Mutex
-	verifications chan VerificationRequest
-}
-
-// List the addresses.
+// Addresses -- List the addresses.
 func (client *client) Addresses() []string {
 	addrs := client.host.Addrs()
-	accum := make([]string, len(addrs))
-	for i := range accum {
-		accum[i] = addrs[i].String()
+	result := make([]string, len(addrs))
+	for i := range result {
+		result[i] = addrs[i].String()
 	}
-	return accum
+	return result
 }
 
-// Get the ID.
+// ID -- Get the ID.
 func (client *client) ID() string {
 	return client.id.Pretty()
 }
 
-// Get the peer count.
+// PeerCount -- Get the peer count.
 func (client *client) PeerCount() int {
 	return client.table.Size()
 }
 
-// Get the stream count.
+// StreamCount -- Get the stream count.
 func (client *client) StreamCount() int {
 	return client.streamstore.Size()
 }
 
-// Send an artifact.
+// Send -- Send an artifact.
 func (client *client) Send(artifact artifact.Artifact) {
 	client.send <- artifact
 }
 
-// Receive an artifact.
+// Receive -- Receive an artifact.
 func (client *client) Receive() artifact.Artifact {
 	return <-client.receive
 }
 
-// Request an artifact.
-func (client *client) RequestArtifact(checksum [32]byte) (artifact.Artifact, error) {
+// Request -- Request an artifact.
+func (client *client) Request(checksum [32]byte) (artifact.Artifact, error) {
 	return nil, errors.New("TODO: Implement request method.")
 }
 
-// Respond to an artifact request.
-func (client *client) RespondArtifact() ArtifactRequest {
-	return <-client.respond
+// SetArtifactHandler -- Register an artifact request handler.
+func (client *client) SetArtifactHandler(handler ArtifactHandler) {
+
+	notify := make(chan struct{})
+
+	client.unsetArtifactHandlerLock.Lock()
+	client.unsetArtifactHandler()
+	client.unsetArtifactHandler = func() {
+		close(notify)
+	}
+	client.unsetArtifactHandlerLock.Unlock()
+
+	go func() {
+		for {
+			select {
+			case <-notify:
+				return
+			case request := <-client.artifactRequests:
+				handler(request.checksum, request.response)
+			}
+		}
+	}()
+
 }
 
-// Respond to a signature request.
-func (client *client) RespondSignature() SignatureRequest {
-	return <-client.signatures
+// SetSignatureHandler -- Register a signature request handler.
+func (client *client) SetSignatureHandler(handler SignatureHandler) {
+
+	notify := make(chan struct{})
+
+	client.unsetSignatureHandlerLock.Lock()
+	client.unsetSignatureHandler()
+	client.unsetSignatureHandler = func() {
+		close(notify)
+	}
+	client.unsetSignatureHandlerLock.Unlock()
+
+	go func() {
+		for {
+			select {
+			case <-notify:
+				return
+			case request := <-client.signatureRequests:
+				handler(request.message, request.response)
+			}
+		}
+	}()
+
 }
 
-// Respond to a signature verification request.
-func (client *client) RespondVerification() VerificationRequest {
-	return <-client.verifications
+// SetVerificationHandler -- Register a verification request handler.
+func (client *client) SetVerificationHandler(handler VerificationHandler) {
+
+	notify := make(chan struct{})
+
+	client.unsetVerificationHandlerLock.Lock()
+	client.unsetVerificationHandler()
+	client.unsetVerificationHandler = func() {
+		close(notify)
+	}
+	client.unsetVerificationHandlerLock.Unlock()
+
+	go func() {
+		for {
+			select {
+			case <-notify:
+				return
+			case request := <-client.verificationRequests:
+				handler(request.signature, request.message, request.publicKeys, request.response)
+			}
+		}
+	}()
+
 }
 
-// Create a client.
+// New -- Create a client.
 func (config *Config) New() (Client, func(), error) {
-	return config.new()
+	return config.create()
 }
 
-func (config *Config) new() (*client, func(), error) {
+type client struct {
+	artifactCache                *lru.Cache
+	artifactCacheLock            *sync.Mutex
+	artifactRequests             chan struct {checksum [32]byte; response chan artifact.Artifact}
+	config                       *Config
+	context                      context.Context
+	host                         *basichost.BasicHost
+	id                           peer.ID
+	key                          keyspace.Key
+	logger                       *logging.Logger
+	peerstore                    peerstore.Peerstore
+	protocol                     protocol.ID
+	receive                      chan artifact.Artifact
+	send                         chan artifact.Artifact
+	signatureRequests            chan struct {message []byte; response chan []byte}
+	streamstore                  streamstore.Streamstore
+	table                        *kbucket.RoutingTable
+	unsetArtifactHandler         func()
+	unsetArtifactHandlerLock     *sync.Mutex
+	unsetSignatureHandler        func()
+	unsetSignatureHandlerLock    *sync.Mutex
+	unsetVerificationHandler     func()
+	unsetVerificationHandlerLock *sync.Mutex
+	verificationRequests         chan struct {signature []byte; message []byte; publicKeys []byte; response chan bool}
+	witnessCache                 *lru.Cache
+	witnessCacheLock             *sync.Mutex
+}
+
+func (config *Config) create() (*client, func(), error) {
 
 	var err error
 	client := &client{}
@@ -303,11 +367,11 @@ func (config *Config) new() (*client, func(), error) {
 	}
 
 	// Create an artifact cache.
-	client.artifacts, err = lru.New(client.config.ArtifactCacheSize)
+	client.artifactCache, err = lru.New(client.config.ArtifactCacheSize)
 	if err != nil {
 		return nil, nil, err
 	}
-	client.artifactsLock = &sync.Mutex{}
+	client.artifactCacheLock = &sync.Mutex{}
 
 	// Create a context.
 	client.context = context.Background()
@@ -358,14 +422,14 @@ func (config *Config) new() (*client, func(), error) {
 		),
 	)
 
-	// Create the artifact queues.
+	// Create the broadcast queues.
 	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
-	client.respond = make(chan ArtifactRequest, client.config.ArtifactQueueSize)
 
-	// Create the signature and verification queues.
-	client.signatures = make(chan SignatureRequest, 1)
-	client.verifications = make(chan VerificationRequest, 1)
+	// Create the request queues.
+	client.artifactRequests = make(chan struct {checksum [32]byte; response chan artifact.Artifact}, client.config.ArtifactQueueSize)
+	client.signatureRequests = make(chan struct {message []byte; response chan []byte}, 1)
+	client.verificationRequests = make(chan struct {signature []byte; message []byte; publicKeys []byte; response chan bool}, 1)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
@@ -385,11 +449,19 @@ func (config *Config) new() (*client, func(), error) {
 	client.table.Update(client.id)
 
 	// Create a witness cache.
-	client.witnesses, err = lru.New(client.config.WitnessCacheSize)
+	client.witnessCache, err = lru.New(client.config.WitnessCacheSize)
 	if err != nil {
 		return nil, nil, err
 	}
-	client.witnessesLock = &sync.Mutex{}
+	client.witnessCacheLock = &sync.Mutex{}
+
+	// Initialize the handle deregistration functions.
+	client.unsetArtifactHandler = func() {}
+	client.unsetArtifactHandlerLock = &sync.Mutex{}
+	client.unsetSignatureHandler = func() {}
+	client.unsetSignatureHandlerLock = &sync.Mutex{}
+	client.unsetVerificationHandler = func() {}
+	client.unsetVerificationHandlerLock = &sync.Mutex{}
 
 	// Start the client.
 	shutdown, err := client.bootstrap()
