@@ -9,33 +9,23 @@
 package p2p
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"testing"
-
-	"github.com/enzoh/go-logging"
 )
 
 // Create a test client.
 func newTestClient(test *testing.T) (*client, func()) {
 
-	// Create a random seed.
-	seed := make([]byte, 32)
-	_, err := rand.Read(seed)
+	// Create a configuration.
+	config, err := DefaultConfig()
 	if err != nil {
 		test.Fatal(err)
 	}
-
-	// Create a configuration.
-	config := DefaultConfig()
 	config.DisableAnalytics = true
 	config.DisableNATPortMap = true
 	config.DisablePeerDiscovery = true
 	config.DisableStreamDiscovery = true
 	config.IP = "127.0.0.1"
-	config.LogLevel = logging.DEBUG
-	config.Port = 0
-	config.RandomSeed = hex.EncodeToString(seed)
+	config.LogLevel = "DEBUG"
 
 	// Create a client.
 	client, shutdown, err := config.create()

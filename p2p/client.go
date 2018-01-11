@@ -11,6 +11,7 @@ package p2p
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -21,7 +22,6 @@ import (
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket/keyspace"
-	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
@@ -51,26 +51,35 @@ type Config struct {
 	KBucketSize            int
 	LatencyTolerance       time.Duration
 	LogFile                *os.File
-	LogLevel               logging.Level
+	LogLevel               string
 	NATMonitorInterval     time.Duration
 	NATMonitorTimeout      time.Duration
 	Network                string
 	PingBufferSize         uint32
 	Port                   uint16
 	ProcessID              int
+	ProofBufferSize        uint32
 	RandomSeed             string
 	SampleMaxBufferSize    uint32
 	SampleSize             int
-	SeedNodes              []multiaddr.Multiaddr
+	SeedNodes              []string
 	StreamstoreCapacity    int
 	StreamstoreQueueSize   int
 	Timeout                time.Duration
+	VerificationBufferSize uint32
 	Version                string
 	WitnessCacheSize       int
 }
 
 // DefaultConfig -- Get the default configuration parameters.
-func DefaultConfig() *Config {
+func DefaultConfig() (*Config, error) {
+
+	entropy := make([]byte, 32)
+	_, err := rand.Read(entropy)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		AnalyticsInterval:      time.Minute,
 		AnalyticsURL:           "https://analytics.dfinity.build/report",
@@ -89,23 +98,26 @@ func DefaultConfig() *Config {
 		KBucketSize:            16,
 		LatencyTolerance:       time.Minute,
 		LogFile:                os.Stdout,
-		LogLevel:               logging.INFO,
+		LogLevel:               "INFO",
 		NATMonitorInterval:     time.Second,
 		NATMonitorTimeout:      time.Minute,
 		Network:                "revolver",
 		PingBufferSize:         32,
-		Port:                   4000,
+		Port:                   0,
 		ProcessID:              0,
-		RandomSeed:             "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		ProofBufferSize:        0,
+		RandomSeed:             hex.EncodeToString(entropy),
 		SampleMaxBufferSize:    8192,
 		SampleSize:             4,
 		SeedNodes:              nil,
 		StreamstoreCapacity:    8,
 		StreamstoreQueueSize:   8192,
 		Timeout:                peerstore.TempAddrTTL,
+		VerificationBufferSize: 0,
 		Version:                "0.1.0",
 		WitnessCacheSize:       65536,
-	}
+	}, nil
+
 }
 
 type Client interface {
@@ -405,7 +417,22 @@ func (config *Config) create() (*client, func(), error) {
 	formatter := "\033[0;37m%{time:15:04:05.000} %{color}%{level} \033[0;34m[%{module}] \033[0m%{message} \033[0;37m%{shortfile}\033[0m"
 	logging.SetBackend(logging.AddModuleLevel(backend))
 	logging.SetFormatter(logging.MustStringFormatter(formatter))
-	logging.SetLevel(client.config.LogLevel, "p2p")
+
+	// Set the log level.
+	switch client.config.LogLevel {
+	case "CRITICAL":
+		logging.SetLevel(logging.CRITICAL, "p2p")
+	case "ERROR":
+		logging.SetLevel(logging.ERROR, "p2p")
+	case "WARNING":
+		logging.SetLevel(logging.WARNING, "p2p")
+	case "NOTICE":
+		logging.SetLevel(logging.NOTICE, "p2p")
+	case "INFO":
+		logging.SetLevel(logging.INFO, "p2p")
+	default:
+		logging.SetLevel(logging.DEBUG, "p2p")
+	}
 	logging.SetLevel(logging.INFO, "streamstore")
 
 	// Create a peer store.

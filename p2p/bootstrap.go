@@ -103,7 +103,11 @@ func (client *client) bootstrap() (func(), error) {
 
 	// Greet the seed nodes.
 	var group sync.WaitGroup
-	for _, address := range client.config.SeedNodes {
+	for _, node := range client.config.SeedNodes {
+		address, err := multiaddr.NewMultiaddr(node)
+		if err != nil {
+			return nil, errors.New("Cannot parse address of seed node")
+		}
 		group.Add(1)
 		go func(address multiaddr.Multiaddr) {
 			defer group.Done()
