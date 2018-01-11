@@ -27,10 +27,7 @@ func newTestClient(test *testing.T) (*client, func()) {
 	}
 
 	// Create a configuration.
-	config, err := DefaultConfig()
-	if err != nil {
-		test.Fatal(err)
-	}
+	config := DefaultConfig()
 	config.DisableAnalytics = true
 	config.DisableNATPortMap = true
 	config.DisablePeerDiscovery = true
@@ -41,7 +38,7 @@ func newTestClient(test *testing.T) (*client, func()) {
 	config.RandomSeed = hex.EncodeToString(seed)
 
 	// Create a client.
-	client, shutdown, err := config.new()
+	client, shutdown, err := config.create()
 	if err != nil {
 		test.Fatal(err)
 	}

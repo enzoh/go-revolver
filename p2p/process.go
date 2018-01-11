@@ -55,9 +55,9 @@ Processing:
 		}
 
 		// Check if the client has already received the artifact.
-		client.artifactsLock.Lock()
-		if client.artifacts.Contains(checksum) {
-			client.artifactsLock.Unlock()
+		client.artifactCacheLock.Lock()
+		if client.artifactCache.Contains(checksum) {
+			client.artifactCacheLock.Unlock()
 			_, err = io.CopyN(ioutil.Discard, stream, int64(size))
 			if err != nil {
 				if isProbableEOF(err) {
@@ -71,17 +71,17 @@ Processing:
 		}
 
 		// Update the artifact cache.
-		client.artifacts.Add(checksum, size)
-		client.artifactsLock.Unlock()
+		client.artifactCache.Add(checksum, size)
+		client.artifactCacheLock.Unlock()
 
 		// Update the witnesses of the artifact.
-		client.witnessesLock.Lock()
-		peers, exists := client.witnesses.Get(checksum)
+		client.witnessCacheLock.Lock()
+		peers, exists := client.witnessCache.Get(checksum)
 		if exists {
 			witnesses = peers.([]peer.ID)
 		}
-		client.witnesses.Add(checksum, append(witnesses, pid))
-		client.witnessesLock.Unlock()
+		client.witnessCache.Add(checksum, append(witnesses, pid))
+		client.witnessCacheLock.Unlock()
 
 		// Queue the artifact.
 		object := artifact.New(stream, checksum, compression, size, timestamp)

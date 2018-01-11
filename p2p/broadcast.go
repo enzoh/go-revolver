@@ -34,7 +34,7 @@ func (client *client) activateBroadcast() func() {
 			case <-notify:
 				return
 			case object := <-client.send:
-				client.artifacts.Add(object.Checksum(), object.Size())
+				client.artifactCache.Add(object.Checksum(), object.Size())
 				client.broadcast(object)
 			}
 		}
@@ -57,7 +57,7 @@ func (client *client) broadcast(object artifact.Artifact) {
 
 	// Create a sorted exclude list from the witness cache.
 	var exclude peer.IDSlice
-	witnesses, exists := client.witnesses.Get(object.Checksum())
+	witnesses, exists := client.witnessCache.Get(object.Checksum())
 	if exists {
 		for _, id := range witnesses.([]peer.ID) {
 			exclude = append(exclude, id)
