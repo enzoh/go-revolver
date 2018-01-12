@@ -16,16 +16,13 @@ import (
 func newTestClient(test *testing.T) (*client, func()) {
 
 	// Create a configuration.
-	config, err := DefaultConfig()
-	if err != nil {
-		test.Fatal(err)
-	}
+	config := DefaultConfig()
 	config.DisableAnalytics = true
 	config.DisableNATPortMap = true
 	config.DisablePeerDiscovery = true
 	config.DisableStreamDiscovery = true
 	config.IP = "127.0.0.1"
-	config.LogLevel = "DEBUG"
+	config.LogLevel = "debug"
 
 	// Create a client.
 	client, shutdown, err := config.create()

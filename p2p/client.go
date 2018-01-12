@@ -15,6 +15,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -22,6 +24,7 @@ import (
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
 	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket/keyspace"
+	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
@@ -72,13 +75,7 @@ type Config struct {
 }
 
 // DefaultConfig -- Get the default configuration parameters.
-func DefaultConfig() (*Config, error) {
-
-	entropy := make([]byte, 32)
-	_, err := rand.Read(entropy)
-	if err != nil {
-		return nil, err
-	}
+func DefaultConfig() *Config {
 
 	return &Config{
 		AnalyticsInterval:      time.Minute,
@@ -98,7 +95,7 @@ func DefaultConfig() (*Config, error) {
 		KBucketSize:            16,
 		LatencyTolerance:       time.Minute,
 		LogFile:                os.Stdout,
-		LogLevel:               "INFO",
+		LogLevel:               "info",
 		NATMonitorInterval:     time.Second,
 		NATMonitorTimeout:      time.Minute,
 		Network:                "revolver",
@@ -106,17 +103,134 @@ func DefaultConfig() (*Config, error) {
 		Port:                   0,
 		ProcessID:              0,
 		ProofBufferSize:        0,
-		RandomSeed:             hex.EncodeToString(entropy),
+		RandomSeed:             "",
 		SampleMaxBufferSize:    8192,
 		SampleSize:             4,
 		SeedNodes:              nil,
 		StreamstoreCapacity:    8,
 		StreamstoreQueueSize:   8192,
-		Timeout:                peerstore.TempAddrTTL,
+		Timeout:                10 * time.Second,
 		VerificationBufferSize: 0,
 		Version:                "0.1.0",
 		WitnessCacheSize:       65536,
-	}, nil
+	}
+
+}
+
+func (config *Config) validate() error {
+
+	// The analytics interval must be a positive time duration.
+	if config.AnalyticsInterval <= 0 {
+		return errors.New(fmt.Sprintf("Invalid analytics interval: %d", config.AnalyticsInterval))
+	}
+
+	// The analytics URL must be parsable.
+	_, err := url.Parse(config.AnalyticsURL)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Invalid analytics URL: %s", config.AnalyticsURL))
+	}
+
+	// The artifact cache size must be a positive integer.
+	if config.ArtifactCacheSize <= 0 {
+		return errors.New(fmt.Sprintf("Invalid artifact cache size: %d", config.ArtifactCacheSize))
+	}
+
+	// The artifact chunk size must be a non-zero unsigned 32-bit integer.
+	if config.ArtifactChunkSize == 0 {
+		return errors.New("Invalid artifact chunk size: 0")
+	}
+
+	// The artifact max buffer size must be a non-zero unsigned 32-bit integer.
+	if config.ArtifactMaxBufferSize == 0 {
+		return errors.New("Invalid artifact max buffer size: 0")
+	}
+
+	// The artifact queue size must be a positive integer.
+	if config.ArtifactQueueSize <= 0 {
+		return errors.New(fmt.Sprintf("Invalid artifact queue size: %d", config.ArtifactQueueSize))
+	}
+
+	// The IP address must be parsable.
+	if net.ParseIP(config.IP) == nil {
+		return errors.New(fmt.Sprintf("Invalid IP address: %s", config.IP))
+	}
+
+	// The Kademlia bucket size must be a positive integer.
+	if config.KBucketSize <= 0 {
+		return errors.New(fmt.Sprintf("Invalid Kademlia bucket size: %d", config.KBucketSize))
+	}
+
+	// The latency tolerance must be a positive time duration.
+	if config.LatencyTolerance <= 0 {
+		return errors.New(fmt.Sprintf("Invalid latency tolerance: %d", config.LatencyTolerance))
+	}
+
+	// The log level must be recognizable.
+	_, err = logging.LogLevel(config.LogLevel)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Invalid log level: %s", config.LogLevel))
+	}
+
+	// The NAT monitor interval must be a positive time duration.
+	if config.NATMonitorInterval <= 0 {
+		return errors.New(fmt.Sprintf("Invalid NAT monitor interval: %d", config.NATMonitorInterval))
+	}
+
+	// The NAT monitor timeout must be a positive time duration.
+	if config.NATMonitorTimeout <= 0 {
+		return errors.New(fmt.Sprintf("Invalid NAT monitor timeout: %d", config.NATMonitorTimeout))
+	}
+
+	// The ping buffer size must be a non-zero unsigned 32-bit integer.
+	if config.PingBufferSize == 0 {
+		return errors.New("Invalid ping buffer size: 0")
+	}
+
+	// The random seed must be a zero or 32-byte hex-encoded string.
+	_, err = hex.DecodeString(config.RandomSeed)
+	if len(config.RandomSeed) != 0 && len(config.RandomSeed) != 64 || err != nil {
+		return errors.New(fmt.Sprintf("Invalid random seed: %s", config.RandomSeed))
+	}
+
+	// The peer sample max buffer size must be a non-zero unsigned 32-bit integer.
+	if config.SampleMaxBufferSize == 0 {
+		return errors.New("Invalid peer sample max buffer size: 0")
+	}
+
+	// The peer sample size must be a positive integer.
+	if config.SampleSize <= 0 {
+		return errors.New(fmt.Sprintf("Invalid peer sample size: %d", config.SampleSize))
+	}
+
+	// The seed nodes must be parsable.
+	for i := range config.SeedNodes {
+		_, err = multiaddr.NewMultiaddr(config.SeedNodes[i])
+		if err != nil {
+			return errors.New(fmt.Sprintf("Invalid seed node: %s", config.SeedNodes[i]))
+		}
+	}
+
+	// The stream store capacity must be a positive integer.
+	if config.StreamstoreCapacity <= 0 {
+		return errors.New(fmt.Sprintf("Invalid stream store capacity: %d", config.StreamstoreCapacity))
+	}
+
+	// The stream store transaction queue size must be a positive integer.
+	if config.StreamstoreQueueSize <= 0 {
+		return errors.New(fmt.Sprintf("Invalid stream store transaction queue size: %d", config.StreamstoreQueueSize))
+	}
+
+	// The stream timeout must be a positive time duration.
+	if config.Timeout <= 0 {
+		return errors.New(fmt.Sprintf("Invalid stream timeout: %d", config.Timeout))
+	}
+
+	// The witness cache size must be a positive integer.
+	if config.WitnessCacheSize <= 0 {
+		return errors.New(fmt.Sprintf("Invalid witness cache size: %d", config.WitnessCacheSize))
+	}
+
+	return nil
 
 }
 
@@ -318,65 +432,16 @@ type client struct {
 
 func (config *Config) create() (*client, func(), error) {
 
-	var err error
-	client := &client{}
+	// Validate the configuration.
+	err := config.validate()
+	if err != nil {
+		return nil, nil, err
+	}
 
-	// Copy the configuration parameters.
+	// Create a client from the configuration.
+	client := &client{}
 	client.config = &Config{}
 	*client.config = *config
-
-	// Check for any misconfigurations.
-	if client.config.AnalyticsInterval <= 0 {
-		return nil, nil, errors.New("Analytics iteration interval must be a positive time duration.")
-	}
-	if client.config.ArtifactCacheSize <= 0 {
-		return nil, nil, errors.New("Artifact cache size must be a positive integer.")
-	}
-	if client.config.ArtifactChunkSize <= 45 {
-		return nil, nil, errors.New("Artifact chunk size must be an integer greater than forty-five.")
-	}
-	if client.config.ArtifactMaxBufferSize <= 0 {
-		return nil, nil, errors.New("Artifact max buffer size must be a positive integer.")
-	}
-	if client.config.ArtifactQueueSize <= 0 {
-		return nil, nil, errors.New("Artifact queue size must be a positive integer.")
-	}
-	if client.config.KBucketSize <= 0 {
-		return nil, nil, errors.New("K-bucket size must be a positive integer.")
-	}
-	if client.config.LatencyTolerance <= 0 {
-		return nil, nil, errors.New("Latency tolerance must be a positive time duration.")
-	}
-	if client.config.NATMonitorInterval <= 0 {
-		return nil, nil, errors.New("NAT monitor iteration interval must be a positive time duration.")
-	}
-	if client.config.NATMonitorTimeout <= 0 {
-		return nil, nil, errors.New("NAT monitor timeout must be a positive time duration.")
-	}
-	if client.config.PingBufferSize <= 0 {
-		return nil, nil, errors.New("Ping buffer size must be a positive integer.")
-	}
-	if len(client.config.RandomSeed) != 64 {
-		return nil, nil, errors.New("Random seed must be 32 bytes.")
-	}
-	if client.config.SampleMaxBufferSize <= 0 {
-		return nil, nil, errors.New("Peer sample max buffer size must be a positive integer.")
-	}
-	if client.config.SampleSize <= 0 {
-		return nil, nil, errors.New("Peer sample size must be a positive integer.")
-	}
-	if client.config.StreamstoreCapacity <= 0 {
-		return nil, nil, errors.New("Stream store capacity must be a positive integer.")
-	}
-	if client.config.StreamstoreQueueSize <= 0 {
-		return nil, nil, errors.New("Stream store transaction queue size must be a positive integer.")
-	}
-	if client.config.Timeout <= 0 {
-		return nil, nil, errors.New("Request timeout must be a positive time duration.")
-	}
-	if client.config.WitnessCacheSize <= 0 {
-		return nil, nil, errors.New("Witness cache size must be a positive integer.")
-	}
 
 	// Create an artifact cache.
 	client.artifactCache, err = lru.New(client.config.ArtifactCacheSize)
@@ -388,8 +453,13 @@ func (config *Config) create() (*client, func(), error) {
 	// Create a context.
 	client.context = context.Background()
 
-	// Decode the random seed.
-	seed, err := hex.DecodeString(client.config.RandomSeed)
+	// Create or decode the random seed.
+	seed := make([]byte, 32)
+	if len(client.config.RandomSeed) == 0 {
+		_, err = rand.Read(seed)
+	} else {
+		seed, err = hex.DecodeString(client.config.RandomSeed)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -408,7 +478,7 @@ func (config *Config) create() (*client, func(), error) {
 		return nil, nil, err
 	}
 
-	// Create a key in the XOR key space.
+	// Create a key in the Kademlia key space.
 	client.key = keyspace.XORKeySpace.Key(kbucket.ConvertPeerID(client.id))
 
 	// Create a logger.
@@ -419,20 +489,11 @@ func (config *Config) create() (*client, func(), error) {
 	logging.SetFormatter(logging.MustStringFormatter(formatter))
 
 	// Set the log level.
-	switch client.config.LogLevel {
-	case "CRITICAL":
-		logging.SetLevel(logging.CRITICAL, "p2p")
-	case "ERROR":
-		logging.SetLevel(logging.ERROR, "p2p")
-	case "WARNING":
-		logging.SetLevel(logging.WARNING, "p2p")
-	case "NOTICE":
-		logging.SetLevel(logging.NOTICE, "p2p")
-	case "INFO":
-		logging.SetLevel(logging.INFO, "p2p")
-	default:
-		logging.SetLevel(logging.DEBUG, "p2p")
+	level, err := logging.LogLevel(client.config.LogLevel)
+	if err != nil {
+		return nil, nil, err
 	}
+	logging.SetLevel(level, "p2p")
 	logging.SetLevel(logging.INFO, "streamstore")
 
 	// Create a peer store.
@@ -482,7 +543,7 @@ func (config *Config) create() (*client, func(), error) {
 	}
 	client.witnessCacheLock = &sync.Mutex{}
 
-	// Initialize the handle deregistration functions.
+	// Initialize the handler deregistration functions.
 	client.unsetArtifactHandler = func() {}
 	client.unsetArtifactHandlerLock = &sync.Mutex{}
 	client.unsetProofHandler = func() {}
