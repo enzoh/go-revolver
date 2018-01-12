@@ -40,7 +40,7 @@ func (client *client) discoverStreams() func() {
 				} else {
 					time.Sleep(120 * time.Second)
 				}
-				if client.streamstore.Size() < client.streamstore.Capacity() {
+				if client.streamstore.OutgoingSize() < client.streamstore.OutgoingCapacity() {
 					client.replenishStreamstore()
 				}
 			}
@@ -52,15 +52,15 @@ func (client *client) discoverStreams() func() {
 
 }
 
-// Replenish the stream store.
+// Replenish the stream store, i.e. fill outgoing streams to maximum capacity.
 func (client *client) replenishStreamstore() {
 
 	var delta []peer.ID
 	var peers []peer.ID
 
 	buckets := client.table.Buckets
-	streams := client.streamstore.Peers()
-	targets := deal(client.streamstore.Capacity(), len(buckets))
+	streams := client.streamstore.OutgoingPeers()
+	targets := deal(client.streamstore.OutgoingCapacity(), len(buckets))
 
 	for i := range buckets {
 

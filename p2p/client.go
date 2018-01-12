@@ -36,42 +36,44 @@ import (
 	"github.com/hashicorp/golang-lru"
 )
 
+// Config configures for the client.
 type Config struct {
-	AnalyticsInterval      time.Duration
-	AnalyticsURL           string
-	AnalyticsUserData      string
-	ArtifactCacheSize      int
-	ArtifactChunkSize      uint32
-	ArtifactMaxBufferSize  uint32
-	ArtifactQueueSize      int
-	ClusterID              int
-	DisableAnalytics       bool
-	DisableBroadcast       bool
-	DisableNATPortMap      bool
-	DisablePeerDiscovery   bool
-	DisableStreamDiscovery bool
-	IP                     string
-	KBucketSize            int
-	LatencyTolerance       time.Duration
-	LogFile                *os.File
-	LogLevel               string
-	NATMonitorInterval     time.Duration
-	NATMonitorTimeout      time.Duration
-	Network                string
-	PingBufferSize         uint32
-	Port                   uint16
-	ProcessID              int
-	ProofBufferSize        uint32
-	RandomSeed             string
-	SampleMaxBufferSize    uint32
-	SampleSize             int
-	SeedNodes              []string
-	StreamstoreCapacity    int
-	StreamstoreQueueSize   int
-	Timeout                time.Duration
-	VerificationBufferSize uint32
-	Version                string
-	WitnessCacheSize       int
+	AnalyticsInterval           time.Duration
+	AnalyticsURL                string
+	AnalyticsUserData           string
+	ArtifactCacheSize           int
+	ArtifactChunkSize           uint32
+	ArtifactMaxBufferSize       uint32
+	ArtifactQueueSize           int
+	ClusterID                   int
+	DisableAnalytics            bool
+	DisableBroadcast            bool
+	DisableNATPortMap           bool
+	DisablePeerDiscovery        bool
+	DisableStreamDiscovery      bool
+	IP                          string
+	KBucketSize                 int
+	LatencyTolerance            time.Duration
+	LogFile                     *os.File
+	LogLevel                    string
+	NATMonitorInterval          time.Duration
+	NATMonitorTimeout           time.Duration
+	Network                     string
+	PingBufferSize              uint32
+	Port                        uint16
+	ProcessID                   int
+	ProofBufferSize             uint32
+	RandomSeed                  string
+	SampleMaxBufferSize         uint32
+	SampleSize                  int
+	SeedNodes                   []string
+	StreamstoreIncomingCapacity int
+	StreamstoreOutgoingCapacity int
+	StreamstoreQueueSize        int
+	Timeout                     time.Duration
+	VerificationBufferSize      uint32
+	Version                     string
+	WitnessCacheSize            int
 }
 
 // DefaultConfig -- Get the default configuration parameters.
@@ -91,28 +93,29 @@ func DefaultConfig() *Config {
 		DisableNATPortMap:      false,
 		DisablePeerDiscovery:   false,
 		DisableStreamDiscovery: false,
-		IP:                     "0.0.0.0",
-		KBucketSize:            16,
-		LatencyTolerance:       time.Minute,
-		LogFile:                os.Stdout,
-		LogLevel:               "info",
-		NATMonitorInterval:     time.Second,
-		NATMonitorTimeout:      time.Minute,
-		Network:                "revolver",
-		PingBufferSize:         32,
-		Port:                   0,
-		ProcessID:              0,
-		ProofBufferSize:        0,
-		RandomSeed:             "",
-		SampleMaxBufferSize:    8192,
-		SampleSize:             4,
-		SeedNodes:              nil,
-		StreamstoreCapacity:    8,
-		StreamstoreQueueSize:   8192,
-		Timeout:                10 * time.Second,
-		VerificationBufferSize: 0,
-		Version:                "0.1.0",
-		WitnessCacheSize:       65536,
+		IP:                          "0.0.0.0",
+		KBucketSize:                 16,
+		LatencyTolerance:            time.Minute,
+		LogFile:                     os.Stdout,
+		LogLevel:                    "info",
+		NATMonitorInterval:          time.Second,
+		NATMonitorTimeout:           time.Minute,
+		Network:                     "revolver",
+		PingBufferSize:              32,
+		Port:                        0,
+		ProcessID:                   0,
+		ProofBufferSize:             0,
+		RandomSeed:                  "",
+		SampleMaxBufferSize:         8192,
+		SampleSize:                  4,
+		SeedNodes:                   nil,
+		StreamstoreIncomingCapacity: 64,
+		StreamstoreOutgoingCapacity: 8,
+		StreamstoreQueueSize:        8192,
+		Timeout:                     10 * time.Second,
+		VerificationBufferSize:      0,
+		Version:                     "0.1.0",
+		WitnessCacheSize:            65536,
 	}
 
 }
@@ -121,18 +124,18 @@ func (config *Config) validate() error {
 
 	// The analytics interval must be a positive time duration.
 	if config.AnalyticsInterval <= 0 {
-		return errors.New(fmt.Sprintf("Invalid analytics interval: %d", config.AnalyticsInterval))
+		return fmt.Errorf("Invalid analytics interval: %d", config.AnalyticsInterval)
 	}
 
 	// The analytics URL must be parsable.
 	_, err := url.Parse(config.AnalyticsURL)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Invalid analytics URL: %s", config.AnalyticsURL))
+		return fmt.Errorf("Invalid analytics URL: %s", config.AnalyticsURL)
 	}
 
 	// The artifact cache size must be a positive integer.
 	if config.ArtifactCacheSize <= 0 {
-		return errors.New(fmt.Sprintf("Invalid artifact cache size: %d", config.ArtifactCacheSize))
+		return fmt.Errorf("Invalid artifact cache size: %d", config.ArtifactCacheSize)
 	}
 
 	// The artifact chunk size must be a non-zero unsigned 32-bit integer.
@@ -147,38 +150,38 @@ func (config *Config) validate() error {
 
 	// The artifact queue size must be a positive integer.
 	if config.ArtifactQueueSize <= 0 {
-		return errors.New(fmt.Sprintf("Invalid artifact queue size: %d", config.ArtifactQueueSize))
+		return fmt.Errorf("Invalid artifact queue size: %d", config.ArtifactQueueSize)
 	}
 
 	// The IP address must be parsable.
 	if net.ParseIP(config.IP) == nil {
-		return errors.New(fmt.Sprintf("Invalid IP address: %s", config.IP))
+		return fmt.Errorf("Invalid IP address: %s", config.IP)
 	}
 
 	// The Kademlia bucket size must be a positive integer.
 	if config.KBucketSize <= 0 {
-		return errors.New(fmt.Sprintf("Invalid Kademlia bucket size: %d", config.KBucketSize))
+		return fmt.Errorf("Invalid Kademlia bucket size: %d", config.KBucketSize)
 	}
 
 	// The latency tolerance must be a positive time duration.
 	if config.LatencyTolerance <= 0 {
-		return errors.New(fmt.Sprintf("Invalid latency tolerance: %d", config.LatencyTolerance))
+		return fmt.Errorf("Invalid latency tolerance: %d", config.LatencyTolerance)
 	}
 
 	// The log level must be recognizable.
 	_, err = logging.LogLevel(config.LogLevel)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Invalid log level: %s", config.LogLevel))
+		return fmt.Errorf("Invalid log level: %s", config.LogLevel)
 	}
 
 	// The NAT monitor interval must be a positive time duration.
 	if config.NATMonitorInterval <= 0 {
-		return errors.New(fmt.Sprintf("Invalid NAT monitor interval: %d", config.NATMonitorInterval))
+		return fmt.Errorf("Invalid NAT monitor interval: %d", config.NATMonitorInterval)
 	}
 
 	// The NAT monitor timeout must be a positive time duration.
 	if config.NATMonitorTimeout <= 0 {
-		return errors.New(fmt.Sprintf("Invalid NAT monitor timeout: %d", config.NATMonitorTimeout))
+		return fmt.Errorf("Invalid NAT monitor timeout: %d", config.NATMonitorTimeout)
 	}
 
 	// The ping buffer size must be a non-zero unsigned 32-bit integer.
@@ -189,7 +192,7 @@ func (config *Config) validate() error {
 	// The random seed must be a zero or 32-byte hex-encoded string.
 	_, err = hex.DecodeString(config.RandomSeed)
 	if len(config.RandomSeed) != 0 && len(config.RandomSeed) != 64 || err != nil {
-		return errors.New(fmt.Sprintf("Invalid random seed: %s", config.RandomSeed))
+		return fmt.Errorf("Invalid random seed: %s", config.RandomSeed)
 	}
 
 	// The peer sample max buffer size must be a non-zero unsigned 32-bit integer.
@@ -199,41 +202,47 @@ func (config *Config) validate() error {
 
 	// The peer sample size must be a positive integer.
 	if config.SampleSize <= 0 {
-		return errors.New(fmt.Sprintf("Invalid peer sample size: %d", config.SampleSize))
+		return fmt.Errorf("Invalid peer sample size: %d", config.SampleSize)
 	}
 
 	// The seed nodes must be parsable.
 	for i := range config.SeedNodes {
 		_, err = multiaddr.NewMultiaddr(config.SeedNodes[i])
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid seed node: %s", config.SeedNodes[i]))
+			return fmt.Errorf("Invalid seed node: %s", config.SeedNodes[i])
 		}
 	}
 
-	// The stream store capacity must be a positive integer.
-	if config.StreamstoreCapacity <= 0 {
-		return errors.New(fmt.Sprintf("Invalid stream store capacity: %d", config.StreamstoreCapacity))
+	// The stream store incoming capacity must be a positive integer.
+	if config.StreamstoreIncomingCapacity <= 0 {
+		return fmt.Errorf("Invalid stream store incoming capacity: %d", config.StreamstoreIncomingCapacity)
+	}
+
+	// The stream store outgoing capacity must be a positive integer.
+	if config.StreamstoreOutgoingCapacity <= 0 {
+		return fmt.Errorf("Invalid stream store incoming capacity: %d", config.StreamstoreOutgoingCapacity)
 	}
 
 	// The stream store transaction queue size must be a positive integer.
 	if config.StreamstoreQueueSize <= 0 {
-		return errors.New(fmt.Sprintf("Invalid stream store transaction queue size: %d", config.StreamstoreQueueSize))
+		return fmt.Errorf("Invalid stream store transaction queue size: %d", config.StreamstoreQueueSize)
 	}
 
 	// The stream timeout must be a positive time duration.
 	if config.Timeout <= 0 {
-		return errors.New(fmt.Sprintf("Invalid stream timeout: %d", config.Timeout))
+		return fmt.Errorf("Invalid stream timeout: %d", config.Timeout)
 	}
 
 	// The witness cache size must be a positive integer.
 	if config.WitnessCacheSize <= 0 {
-		return errors.New(fmt.Sprintf("Invalid witness cache size: %d", config.WitnessCacheSize))
+		return fmt.Errorf("Invalid witness cache size: %d", config.WitnessCacheSize)
 	}
 
 	return nil
 
 }
 
+// Client interacts with the network.
 type Client interface {
 
 	// List the addresses.
@@ -304,7 +313,7 @@ func (client *client) PeerCount() int {
 
 // StreamCount -- Get the stream count.
 func (client *client) StreamCount() int {
-	return client.streamstore.Size()
+	return client.streamstore.IncomingSize() + client.streamstore.OutgoingSize()
 }
 
 // Send -- Send an artifact.
@@ -403,17 +412,23 @@ func (config *Config) New() (Client, func(), error) {
 }
 
 type client struct {
-	artifactCache                *lru.Cache
-	artifactCacheLock            *sync.Mutex
-	artifactRequests             chan struct {checksum [32]byte; response chan artifact.Artifact}
-	config                       *Config
-	context                      context.Context
-	host                         *basichost.BasicHost
-	id                           peer.ID
-	key                          keyspace.Key
-	logger                       *logging.Logger
-	peerstore                    peerstore.Peerstore
-	proofRequests                chan struct {data []byte; response chan []byte}
+	artifactCache     *lru.Cache
+	artifactCacheLock *sync.Mutex
+	artifactRequests  chan struct {
+		checksum [32]byte
+		response chan artifact.Artifact
+	}
+	config        *Config
+	context       context.Context
+	host          *basichost.BasicHost
+	id            peer.ID
+	key           keyspace.Key
+	logger        *logging.Logger
+	peerstore     peerstore.Peerstore
+	proofRequests chan struct {
+		data     []byte
+		response chan []byte
+	}
 	protocol                     protocol.ID
 	receive                      chan artifact.Artifact
 	send                         chan artifact.Artifact
@@ -425,9 +440,12 @@ type client struct {
 	unsetProofHandlerLock        *sync.Mutex
 	unsetVerificationHandler     func()
 	unsetVerificationHandlerLock *sync.Mutex
-	verificationRequests         chan struct {data []byte; response chan bool}
-	witnessCache                 *lru.Cache
-	witnessCacheLock             *sync.Mutex
+	verificationRequests         chan struct {
+		data     []byte
+		response chan bool
+	}
+	witnessCache     *lru.Cache
+	witnessCacheLock *sync.Mutex
 }
 
 func (config *Config) create() (*client, func(), error) {
@@ -515,13 +533,23 @@ func (config *Config) create() (*client, func(), error) {
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 
 	// Create the request queues.
-	client.artifactRequests = make(chan struct {checksum [32]byte; response chan artifact.Artifact}, client.config.ArtifactQueueSize)
-	client.proofRequests = make(chan struct {data []byte; response chan []byte}, 1)
-	client.verificationRequests = make(chan struct {data []byte; response chan bool}, 1)
+	client.artifactRequests = make(chan struct {
+		checksum [32]byte
+		response chan artifact.Artifact
+	}, client.config.ArtifactQueueSize)
+	client.proofRequests = make(chan struct {
+		data     []byte
+		response chan []byte
+	}, 1)
+	client.verificationRequests = make(chan struct {
+		data     []byte
+		response chan bool
+	}, 1)
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
-		client.config.StreamstoreCapacity,
+		client.config.StreamstoreIncomingCapacity,
+		client.config.StreamstoreOutgoingCapacity,
 		client.config.StreamstoreQueueSize,
 	)
 
