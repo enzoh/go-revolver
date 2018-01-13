@@ -4,8 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
-	"math"
-	"math/big"
 	"sync"
 	"time"
 
@@ -102,14 +100,8 @@ func send(client p2p.Client, logger *logging.Logger) {
 
 		time.Sleep(time.Second)
 
-		n, err := rand.Int(rand.Reader, big.NewInt(math.MaxUint16))
-		if err != nil {
-			logger.Error("Cannot generate random integer:", err)
-			continue
-		}
-
-		data := make([]byte, n.Int64())
-		_, err = rand.Read(data)
+		data := make([]byte, 32)
+		_, err := rand.Read(data)
 		if err != nil {
 			logger.Error("Cannot generate random bytes:", err)
 			continue
