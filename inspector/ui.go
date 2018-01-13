@@ -177,8 +177,8 @@ var HTML = []byte(`<!DOCTYPE html>
 
 		.links line {
 			stroke: #FFF;
-			stroke-opacity: 0.25;
-			stroke-width: 0.25;
+			stroke-opacity: 0.5;
+			stroke-width: 0.5;
 			z-index: -1;
 		}
 
@@ -250,7 +250,7 @@ var HTML = []byte(`<!DOCTYPE html>
 			</nav>
 
 			<!-- Canvas -->
-			<svg class="canvas" width="400" height="400" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid"></svg>
+			<svg class="canvas" width="500" height="500" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid"></svg>
 
 			<!-- Network -->
 			<section id="network">
@@ -375,6 +375,8 @@ var HTML = []byte(`<!DOCTYPE html>
 						d.Addrs.join('<br/>- ') +
 						'<br/>Network: ' +
 						d.Network +
+						'<br/>Streams: ' +
+						d.Streams +
 						'<br/>Version: ' +
 						d.Version +
 						'</span>'
@@ -388,6 +390,8 @@ var HTML = []byte(`<!DOCTYPE html>
 				d3.json('/graph', function(err, graph) {
 
 					if (err) throw err;
+
+					var color = d3.scaleOrdinal(d3.schemeCategory20);
 
 					var link = svg
 						.append('g')
@@ -405,7 +409,7 @@ var HTML = []byte(`<!DOCTYPE html>
 						.enter()
 						.append('circle')
 						.attr('data-bls-public-key', function(d, i) { return d.UserData; })
-						.attr('fill', function(d, i) { return '#525252'; })
+						.attr('fill', function(d, i) { return color(i); })
 						.attr('r', 5)
 						.on('mouseover', mouseover)
 						.on('mouseout', mouseout)
