@@ -57,7 +57,7 @@ func (artifact *artifact) Checksum() [32]byte {
 	return artifact.checksum
 }
 
-// Close an artifact.
+// Close an artifact. This will never produce an error.
 func (artifact *artifact) Close() error {
 	artifact.closer <- 0
 	return nil
@@ -111,20 +111,15 @@ func FromBytes(data []byte, compression bool) (Artifact, error) {
 	var buf bytes.Buffer
 
 	if compression {
-
 		writer, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
 		if err != nil {
 			return nil, err
 		}
-
 		writer.Write(data)
 		writer.Flush()
 		writer.Close()
-
 	} else {
-
 		buf.Write(data)
-
 	}
 
 	return New(
