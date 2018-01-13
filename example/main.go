@@ -59,14 +59,14 @@ func main() {
 		configs[0].RandomSeed = *argRandomSeed
 	}
 
-	// Lanuch clients.
+	// Lanuch the clients.
 	group := &sync.WaitGroup{}
 	group.Add(*argClients)
 	for i := 0; i < *argClients; i++ {
 		go launch(configs[i], group, logger)
 	}
 
-	// Wait for clients to complete.
+	// Wait for the clients to complete.
 	group.Wait()
 
 }
@@ -76,7 +76,7 @@ func launch(config *p2p.Config, group *sync.WaitGroup, logger *logging.Logger) {
 	// Decrement the wait group counter on exit.
 	defer group.Done()
 
-	// Create a p2p client.
+	// Create a client.
 	client, shutdown, err := config.New()
 	if err != nil {
 		logger.Error("Cannot create p2p client:", err)
@@ -88,8 +88,7 @@ func launch(config *p2p.Config, group *sync.WaitGroup, logger *logging.Logger) {
 	go send(client, logger)
 	go receive(client, logger)
 
-	// Hang.
-	// time.Sleep(5 * time.Minute)
+	// Hang forever.
 	select {}
 
 }
