@@ -17,6 +17,7 @@ import (
 func main() {
 
 	// Parse command-line arguments.
+	argAnalyticsInterval := flag.Duration("analytics-interval", 10*time.Second, "Time between analytics reports.")
 	argAnalyticsURL := flag.String("analytics-url", "http://127.0.0.1:8080/report", "URL to submit analytics reports.")
 	argClients := flag.Int("clients", 1, "Number of clients.")
 	argDisableNATPortMap := flag.Bool("disable-nat", false, "Disable port-mapping in NAT devices?")
@@ -43,6 +44,7 @@ func main() {
 	configs := make([]*p2p.Config, *argClients)
 	for i := 0; i < *argClients; i++ {
 		configs[i] = p2p.DefaultConfig()
+		configs[i].AnalyticsInterval = *argAnalyticsInterval
 		configs[i].AnalyticsURL = *argAnalyticsURL
 		configs[i].DisableNATPortMap = *argDisableNATPortMap
 		configs[i].IP = *argIP
