@@ -1,9 +1,18 @@
+/**
+ * File        : main.go
+ * Description : Example client.
+ * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
+ * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
+ * Stability   : Experimental
+ */
+
 package main
 
 import (
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
+	"os"
 	"sync"
 	"time"
 
@@ -28,8 +37,13 @@ func main() {
 	flag.Parse()
 
 	// Create a logger.
-	var level logging.Level
 	logger := logging.MustGetLogger("main")
+	backend := logging.NewLogBackend(os.Stdout, "", 0)
+	format := "\033[0;37m%{time:15:04:05.000} %{color}%{level} \033[0;34m[%{module}] \033[0m%{message} \033[0;37m%{shortfile}\033[0m"
+	logging.SetBackend(logging.AddModuleLevel(backend))
+	logging.SetFormatter(logging.MustStringFormatter(format))
+
+	// Set the log level.
 	level, err := logging.LogLevel(*argLevel)
 	if err != nil {
 		logger.Critical("Invalid log level:", err)
@@ -37,6 +51,7 @@ func main() {
 	}
 	logging.SetLevel(level, "main")
 	logging.SetLevel(level, "p2p")
+	logging.SetLevel(level, "streamstore")
 
 	// Create the client configurations.
 	configs := make([]*p2p.Config, *argClients)
@@ -113,7 +128,7 @@ func send(client p2p.Client, logger *logging.Logger) {
 		}
 
 		checksum := object.Checksum()
-		logger.Infof(
+		logger.Debugf(
 			"Sending %d byte artifact with checksum %s",
 			object.Size(),
 			hex.EncodeToString(checksum[:4]),
@@ -132,7 +147,7 @@ func receive(client p2p.Client, logger *logging.Logger) {
 		object := client.Receive()
 
 		checksum := object.Checksum()
-		logger.Infof(
+		logger.Debugf(
 			"Receiving %d byte artifact with checksum %s and latency %s",
 			object.Size(),
 			hex.EncodeToString(checksum[:4]),

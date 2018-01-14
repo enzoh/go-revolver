@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"sync"
 	"time"
 
@@ -54,7 +53,6 @@ type Config struct {
 	IP                          string
 	KBucketSize                 int
 	LatencyTolerance            time.Duration
-	LogFile                     *os.File
 	LogLevel                    string
 	NATMonitorInterval          time.Duration
 	NATMonitorTimeout           time.Duration
@@ -96,7 +94,6 @@ func DefaultConfig() *Config {
 		IP:                          "0.0.0.0",
 		KBucketSize:                 16,
 		LatencyTolerance:            time.Minute,
-		LogFile:                     os.Stdout,
 		LogLevel:                    "info",
 		NATMonitorInterval:          time.Second,
 		NATMonitorTimeout:           time.Minute,
@@ -501,18 +498,6 @@ func (config *Config) create() (*client, func(), error) {
 
 	// Create a logger.
 	client.logger = logging.MustGetLogger("p2p")
-	backend := logging.NewLogBackend(client.config.LogFile, "", 0)
-	formatter := "\033[0;37m%{time:15:04:05.000} %{color}%{level} \033[0;34m[%{module}] \033[0m%{message} \033[0;37m%{shortfile}\033[0m"
-	logging.SetBackend(logging.AddModuleLevel(backend))
-	logging.SetFormatter(logging.MustStringFormatter(formatter))
-
-	// Set the log level.
-	level, err := logging.LogLevel(client.config.LogLevel)
-	if err != nil {
-		return nil, nil, err
-	}
-	logging.SetLevel(level, "p2p")
-	logging.SetLevel(logging.INFO, "streamstore")
 
 	// Create a peer store.
 	client.peerstore = peerstore.NewPeerstore()
