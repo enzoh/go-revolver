@@ -44,6 +44,7 @@ type Config struct {
 	ArtifactChunkSize           uint32
 	ArtifactMaxBufferSize       uint32
 	ArtifactQueueSize           int
+	ChallengeMaxBufferSize      uint32
 	ClusterID                   int
 	DisableAnalytics            bool
 	DisableBroadcast            bool
@@ -60,31 +61,31 @@ type Config struct {
 	PingBufferSize              uint32
 	Port                        uint16
 	ProcessID                   int
-	ProofBufferSize             uint32
+	ProofMaxBufferSize          uint32
 	RandomSeed                  string
 	SampleMaxBufferSize         uint32
 	SampleSize                  int
 	SeedNodes                   []string
+	SpammerCacheSize            int
 	StreamstoreIncomingCapacity int
 	StreamstoreOutgoingCapacity int
 	StreamstoreQueueSize        int
 	Timeout                     time.Duration
-	VerificationBufferSize      uint32
 	Version                     string
 	WitnessCacheSize            int
 }
 
 // DefaultConfig -- Get the default configuration parameters.
 func DefaultConfig() *Config {
-
 	return &Config{
 		AnalyticsInterval:      time.Minute,
 		AnalyticsURL:           "https://analytics.dfinity.build/report",
 		AnalyticsUserData:      "",
 		ArtifactCacheSize:      65536,
 		ArtifactChunkSize:      65536,
-		ArtifactMaxBufferSize:  16777216,
-		ArtifactQueueSize:      8192,
+		ArtifactMaxBufferSize:  8388608,
+		ArtifactQueueSize:      8,
+		ChallengeMaxBufferSize: 32,
 		ClusterID:              0,
 		DisableAnalytics:       false,
 		DisableBroadcast:       false,
@@ -101,20 +102,19 @@ func DefaultConfig() *Config {
 		PingBufferSize:              32,
 		Port:                        0,
 		ProcessID:                   0,
-		ProofBufferSize:             0,
+		ProofMaxBufferSize:          0,
 		RandomSeed:                  "",
 		SampleMaxBufferSize:         8192,
 		SampleSize:                  4,
 		SeedNodes:                   nil,
+		SpammerCacheSize:            16384,
 		StreamstoreIncomingCapacity: 64,
 		StreamstoreOutgoingCapacity: 8,
 		StreamstoreQueueSize:        8192,
 		Timeout:                     10 * time.Second,
-		VerificationBufferSize:      0,
 		Version:                     "0.1.0",
 		WitnessCacheSize:            65536,
 	}
-
 }
 
 func (config *Config) validate() error {
@@ -239,7 +239,6 @@ func (config *Config) validate() error {
 
 }
 
-// Client interacts with the network.
 type Client interface {
 
 	// List the addresses.
@@ -266,6 +265,9 @@ type Client interface {
 	// Register an artifact request handler.
 	SetArtifactHandler(handler ArtifactHandler)
 
+	// Register a challenge request handler.
+	SetChallengeHandler(handler ChallengeHandler)
+
 	// Register a zero-knowledge proof request handler.
 	SetProofHandler(handler ProofHandler)
 
@@ -273,20 +275,74 @@ type Client interface {
 	SetVerificationHandler(handler VerificationHandler)
 }
 
+type client struct {
+	artifactCache            *lru.Cache
+	artifactCacheLock        *sync.Mutex
+	artifactRequests         chan artifactRequest
+	challengeRequests        chan challengeRequest
+	config                   *Config
+	context                  context.Context
+	host                     *basichost.BasicHost
+	id                       peer.ID
+	key                      keyspace.Key
+	logger                   *logging.Logger
+	peerstore                peerstore.Peerstore
+	proofRequests            chan proofRequest
+	protocol                 protocol.ID
+	receive                  chan artifact.Artifact
+	send                     chan artifact.Artifact
+	spammerCache             *lru.Cache
+	spammerCacheLock         *sync.Mutex
+	streamstore              streamstore.Streamstore
+	table                    *kbucket.RoutingTable
+	unsetArtifactHandler     func()
+	unsetChallengeHandler    func()
+	unsetHandlerLock         *sync.Mutex
+	unsetProofHandler        func()
+	unsetVerificationHandler func()
+	verificationRequests     chan verificationRequest
+	witnessCache             *lru.Cache
+	witnessCacheLock         *sync.Mutex
+}
+
 // ArtifactHandler -- This type represents a function that executes when
 // receiving an artifact request. The function can be registered as a callback
 // using SetArtifactHandler.
 type ArtifactHandler func(checksum [32]byte, response chan artifact.Artifact)
 
+type artifactRequest struct {
+	checksum [32]byte
+	response chan artifact.Artifact
+}
+
+// ChallengeHandler -- This type represents a function that executes when
+// receiving a challenge request. The function can be registered as a callback
+// using SetChallengeHandler.
+type ChallengeHandler func(response chan []byte)
+
+type challengeRequest struct {
+	response chan []byte
+}
+
 // ProofHandler -- This type represents a function that executes when receiving
 // a zero-knowledge proof request. The function can be registered as a callback
 // using SetProofHandler.
-type ProofHandler func(data []byte, response chan []byte)
+type ProofHandler func(challenge []byte, response chan []byte)
+
+type proofRequest struct {
+	challenge []byte
+	response  chan []byte
+}
 
 // VerificationHandler -- This type represents a function that executes when
 // receiving a verification request. The function can be registered as a
 // callback using SetVerificationHandler.
-type VerificationHandler func(data []byte, response chan bool)
+type VerificationHandler func(proof []byte, response chan bool)
+
+type verificationRequest struct {
+	proof    []byte
+	response chan bool
+}
 
 // Addresses -- List the addresses.
 func (client *client) Addresses() []string {
@@ -333,12 +389,12 @@ func (client *client) SetArtifactHandler(handler ArtifactHandler) {
 
 	notify := make(chan struct{})
 
-	client.unsetArtifactHandlerLock.Lock()
+	client.unsetHandlerLock.Lock()
 	client.unsetArtifactHandler()
 	client.unsetArtifactHandler = func() {
 		close(notify)
 	}
-	client.unsetArtifactHandlerLock.Unlock()
+	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -353,17 +409,42 @@ func (client *client) SetArtifactHandler(handler ArtifactHandler) {
 
 }
 
+// SetChallengeHandler -- Register a challenge request handler.
+func (client *client) SetChallengeHandler(handler ChallengeHandler) {
+
+	notify := make(chan struct{})
+
+	client.unsetHandlerLock.Lock()
+	client.unsetChallengeHandler()
+	client.unsetChallengeHandler = func() {
+		close(notify)
+	}
+	client.unsetHandlerLock.Unlock()
+
+	go func() {
+		for {
+			select {
+			case <-notify:
+				return
+			case request := <-client.challengeRequests:
+				handler(request.response)
+			}
+		}
+	}()
+
+}
+
 // SetProofHandler -- Register a zero-knowledge proof request handler.
 func (client *client) SetProofHandler(handler ProofHandler) {
 
 	notify := make(chan struct{})
 
-	client.unsetProofHandlerLock.Lock()
+	client.unsetHandlerLock.Lock()
 	client.unsetProofHandler()
 	client.unsetProofHandler = func() {
 		close(notify)
 	}
-	client.unsetProofHandlerLock.Unlock()
+	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -371,7 +452,7 @@ func (client *client) SetProofHandler(handler ProofHandler) {
 			case <-notify:
 				return
 			case request := <-client.proofRequests:
-				handler(request.data, request.response)
+				handler(request.challenge, request.response)
 			}
 		}
 	}()
@@ -383,12 +464,12 @@ func (client *client) SetVerificationHandler(handler VerificationHandler) {
 
 	notify := make(chan struct{})
 
-	client.unsetVerificationHandlerLock.Lock()
+	client.unsetHandlerLock.Lock()
 	client.unsetVerificationHandler()
 	client.unsetVerificationHandler = func() {
 		close(notify)
 	}
-	client.unsetVerificationHandlerLock.Unlock()
+	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -396,7 +477,7 @@ func (client *client) SetVerificationHandler(handler VerificationHandler) {
 			case <-notify:
 				return
 			case request := <-client.verificationRequests:
-				handler(request.data, request.response)
+				handler(request.proof, request.response)
 			}
 		}
 	}()
@@ -406,43 +487,6 @@ func (client *client) SetVerificationHandler(handler VerificationHandler) {
 // New -- Create a client.
 func (config *Config) New() (Client, func(), error) {
 	return config.create()
-}
-
-type client struct {
-	artifactCache     *lru.Cache
-	artifactCacheLock *sync.Mutex
-	artifactRequests  chan struct {
-		checksum [32]byte
-		response chan artifact.Artifact
-	}
-	config        *Config
-	context       context.Context
-	host          *basichost.BasicHost
-	id            peer.ID
-	key           keyspace.Key
-	logger        *logging.Logger
-	peerstore     peerstore.Peerstore
-	proofRequests chan struct {
-		data     []byte
-		response chan []byte
-	}
-	protocol                     protocol.ID
-	receive                      chan artifact.Artifact
-	send                         chan artifact.Artifact
-	streamstore                  streamstore.Streamstore
-	table                        *kbucket.RoutingTable
-	unsetArtifactHandler         func()
-	unsetArtifactHandlerLock     *sync.Mutex
-	unsetProofHandler            func()
-	unsetProofHandlerLock        *sync.Mutex
-	unsetVerificationHandler     func()
-	unsetVerificationHandlerLock *sync.Mutex
-	verificationRequests         chan struct {
-		data     []byte
-		response chan bool
-	}
-	witnessCache     *lru.Cache
-	witnessCacheLock *sync.Mutex
 }
 
 func (config *Config) create() (*client, func(), error) {
@@ -464,6 +508,12 @@ func (config *Config) create() (*client, func(), error) {
 		return nil, nil, err
 	}
 	client.artifactCacheLock = &sync.Mutex{}
+
+	// Create an artifact request queue.
+	client.artifactRequests = make(chan artifactRequest, client.config.ArtifactQueueSize)
+
+	// Create a challenge request queue.
+	client.challengeRequests = make(chan challengeRequest, 1)
 
 	// Create a context.
 	client.context = context.Background()
@@ -504,6 +554,9 @@ func (config *Config) create() (*client, func(), error) {
 	client.peerstore.AddPrivKey(client.id, secretKey)
 	client.peerstore.AddPubKey(client.id, publicKey)
 
+	// Create a zero-knowledge proof request queue.
+	client.proofRequests = make(chan proofRequest, 1)
+
 	// Create a protocol.
 	client.protocol = protocol.ID(
 		fmt.Sprintf(
@@ -513,23 +566,16 @@ func (config *Config) create() (*client, func(), error) {
 		),
 	)
 
-	// Create the broadcast queues.
+	// Create the artifact queues.
 	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 
-	// Create the request queues.
-	client.artifactRequests = make(chan struct {
-		checksum [32]byte
-		response chan artifact.Artifact
-	}, client.config.ArtifactQueueSize)
-	client.proofRequests = make(chan struct {
-		data     []byte
-		response chan []byte
-	}, 1)
-	client.verificationRequests = make(chan struct {
-		data     []byte
-		response chan bool
-	}, 1)
+	// Create a spammer cache.
+	client.spammerCache, err = lru.New(client.config.SpammerCacheSize)
+	if err != nil {
+		return nil, nil, err
+	}
+	client.spammerCacheLock = &sync.Mutex{}
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
@@ -549,6 +595,16 @@ func (config *Config) create() (*client, func(), error) {
 	// Add the client to its routing table.
 	client.table.Update(client.id)
 
+	// Initialize the handler deregistration functions.
+	client.unsetArtifactHandler = func() {}
+	client.unsetChallengeHandler = func() {}
+	client.unsetHandlerLock = &sync.Mutex{}
+	client.unsetProofHandler = func() {}
+	client.unsetVerificationHandler = func() {}
+
+	// Create a verification request queue.
+	client.verificationRequests = make(chan verificationRequest, 1)
+
 	// Create a witness cache.
 	client.witnessCache, err = lru.New(client.config.WitnessCacheSize)
 	if err != nil {
@@ -556,21 +612,19 @@ func (config *Config) create() (*client, func(), error) {
 	}
 	client.witnessCacheLock = &sync.Mutex{}
 
-	// Initialize the handler deregistration functions.
-	client.unsetArtifactHandler = func() {}
-	client.unsetArtifactHandlerLock = &sync.Mutex{}
-	client.unsetProofHandler = func() {}
-	client.unsetProofHandlerLock = &sync.Mutex{}
-	client.unsetVerificationHandler = func() {}
-	client.unsetVerificationHandlerLock = &sync.Mutex{}
-
 	// Start the client.
 	shutdown, err := client.bootstrap()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Ready for action.
-	return client, shutdown, nil
+	// Ready for action!
+	return client, func() {
+		client.unsetArtifactHandler()
+		client.unsetChallengeHandler()
+		client.unsetProofHandler()
+		client.unsetVerificationHandler()
+		shutdown()
+	}, nil
 
 }
