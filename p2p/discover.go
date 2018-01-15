@@ -78,11 +78,6 @@ func (client *client) replenishRoutingTable(queries int) {
 			// Add peers from the random sample.
 			for j := 0; j < len(sample); j++ {
 
-				// Prevent the client from adding a peer already in the routing table.
-				if client.table.Find(sample[j].ID) != "" {
-					continue
-				}
-
 				// Prevent the client from adding a peer with no address.
 				if len(sample[j].Addrs) == 0 {
 					continue
