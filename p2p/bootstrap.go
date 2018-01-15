@@ -97,6 +97,7 @@ func (client *client) bootstrap() (func(), error) {
 	}
 
 	// Register services.
+	client.registerAuthenticationService()
 	client.registerPairService()
 	client.registerPingService()
 	client.registerSampleService()
