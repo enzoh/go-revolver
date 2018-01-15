@@ -62,7 +62,6 @@ func main() {
 		configs[i].DisableNATPortMap = *argDisableNATPortMap
 		configs[i].IP = *argIP
 		configs[i].KBucketSize = *argKBucketSize
-		configs[i].LogLevel = *argLevel
 		configs[i].Port = uint16(*argPort + uint(i))
 		if *argSeedNode != "" {
 			configs[i].SeedNodes = []string{*argSeedNode}
