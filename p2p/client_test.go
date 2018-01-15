@@ -22,7 +22,6 @@ func newTestClient(test *testing.T) (*client, func()) {
 	config.DisablePeerDiscovery = true
 	config.DisableStreamDiscovery = true
 	config.IP = "127.0.0.1"
-	config.LogLevel = "debug"
 
 	// Create a client.
 	client, shutdown, err := config.create()

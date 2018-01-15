@@ -17,8 +17,6 @@ import (
 	"time"
 
 	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
-
-	"github.com/enzoh/go-logging"
 )
 
 // Config -- This type provides all available options to configure a client.
@@ -40,7 +38,6 @@ type Config struct {
 	IP                          string
 	KBucketSize                 int
 	LatencyTolerance            time.Duration
-	LogLevel                    string
 	NATMonitorInterval          time.Duration
 	NATMonitorTimeout           time.Duration
 	Network                     string
@@ -81,7 +78,6 @@ func DefaultConfig() *Config {
 		IP:                          "0.0.0.0",
 		KBucketSize:                 16,
 		LatencyTolerance:            time.Minute,
-		LogLevel:                    "info",
 		NATMonitorInterval:          time.Second,
 		NATMonitorTimeout:           time.Minute,
 		Network:                     "revolver",
@@ -149,12 +145,6 @@ func (config *Config) validate() error {
 	// The latency tolerance must be a positive time duration.
 	if config.LatencyTolerance <= 0 {
 		return fmt.Errorf("Invalid latency tolerance: %d", config.LatencyTolerance)
-	}
-
-	// The log level must be recognizable.
-	_, err = logging.LogLevel(config.LogLevel)
-	if err != nil {
-		return fmt.Errorf("Invalid log level: %s", config.LogLevel)
 	}
 
 	// The NAT monitor interval must be a positive time duration.
