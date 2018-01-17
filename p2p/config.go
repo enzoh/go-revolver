@@ -30,6 +30,7 @@ type Config struct {
 	ArtifactQueueSize           int
 	ChallengeMaxBufferSize      uint32
 	ClusterID                   int
+	CommitmentMaxBufferSize     uint32
 	DisableAnalytics            bool
 	DisableBroadcast            bool
 	DisableNATPortMap           bool
@@ -61,20 +62,21 @@ type Config struct {
 // DefaultConfig -- Get the default configuration parameters.
 func DefaultConfig() *Config {
 	return &Config{
-		AnalyticsInterval:      time.Minute,
-		AnalyticsURL:           "https://analytics.dfinity.build/report",
-		AnalyticsUserData:      "",
-		ArtifactCacheSize:      65536,
-		ArtifactChunkSize:      65536,
-		ArtifactMaxBufferSize:  8388608,
-		ArtifactQueueSize:      8,
-		ChallengeMaxBufferSize: 32,
-		ClusterID:              0,
-		DisableAnalytics:       false,
-		DisableBroadcast:       false,
-		DisableNATPortMap:      false,
-		DisablePeerDiscovery:   false,
-		DisableStreamDiscovery: false,
+		AnalyticsInterval:       time.Minute,
+		AnalyticsURL:            "https://analytics.dfinity.build/report",
+		AnalyticsUserData:       "",
+		ArtifactCacheSize:       65536,
+		ArtifactChunkSize:       65536,
+		ArtifactMaxBufferSize:   8388608,
+		ArtifactQueueSize:       8,
+		ChallengeMaxBufferSize:  32,
+		ClusterID:               0,
+		CommitmentMaxBufferSize: 32,
+		DisableAnalytics:        false,
+		DisableBroadcast:        false,
+		DisableNATPortMap:       false,
+		DisablePeerDiscovery:    false,
+		DisableStreamDiscovery:  false,
 		IP:                          "0.0.0.0",
 		KBucketSize:                 16,
 		LatencyTolerance:            time.Minute,

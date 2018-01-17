@@ -57,6 +57,9 @@ type Client interface {
 	// Register an artifact request handler.
 	SetArtifactHandler(handler ArtifactHandler)
 
+	// Register a commitment request handler.
+	SetCommitmentHandler(handler CommitmentHandler)
+
 	// Register a challenge request handler.
 	SetChallengeHandler(handler ChallengeHandler)
 
@@ -72,6 +75,7 @@ type client struct {
 	artifactCacheLock        *sync.Mutex
 	artifactRequests         chan artifactRequest
 	challengeRequests        chan challengeRequest
+	commitmentRequests       chan commitmentRequest
 	config                   *Config
 	context                  context.Context
 	host                     *basichost.BasicHost
@@ -89,6 +93,7 @@ type client struct {
 	table                    *kbucket.RoutingTable
 	unsetArtifactHandler     func()
 	unsetChallengeHandler    func()
+	unsetCommitmentHandler   func()
 	unsetHandlerLock         *sync.Mutex
 	unsetProofHandler        func()
 	unsetVerificationHandler func()
@@ -105,35 +110,6 @@ type ArtifactHandler func(checksum [32]byte, response chan artifact.Artifact)
 type artifactRequest struct {
 	checksum [32]byte
 	response chan artifact.Artifact
-}
-
-// ChallengeHandler -- This type represents a function that executes when
-// receiving a challenge request. The function can be registered as a callback
-// using SetChallengeHandler.
-type ChallengeHandler func(response chan []byte)
-
-type challengeRequest struct {
-	response chan []byte
-}
-
-// ProofHandler -- This type represents a function that executes when receiving
-// a zero-knowledge proof request. The function can be registered as a callback
-// using SetProofHandler.
-type ProofHandler func(challenge []byte, response chan []byte)
-
-type proofRequest struct {
-	challenge []byte
-	response  chan []byte
-}
-
-// VerificationHandler -- This type represents a function that executes when
-// receiving a verification request. The function can be registered as a
-// callback using SetVerificationHandler.
-type VerificationHandler func(proof []byte, response chan bool)
-
-type verificationRequest struct {
-	proof    []byte
-	response chan bool
 }
 
 // Addresses -- List the addresses.
@@ -201,81 +177,6 @@ func (client *client) SetArtifactHandler(handler ArtifactHandler) {
 
 }
 
-// SetChallengeHandler -- Register a challenge request handler.
-func (client *client) SetChallengeHandler(handler ChallengeHandler) {
-
-	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetChallengeHandler()
-	client.unsetChallengeHandler = func() {
-		close(notify)
-	}
-	client.unsetHandlerLock.Unlock()
-
-	go func() {
-		for {
-			select {
-			case <-notify:
-				return
-			case request := <-client.challengeRequests:
-				handler(request.response)
-			}
-		}
-	}()
-
-}
-
-// SetProofHandler -- Register a zero-knowledge proof request handler.
-func (client *client) SetProofHandler(handler ProofHandler) {
-
-	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetProofHandler()
-	client.unsetProofHandler = func() {
-		close(notify)
-	}
-	client.unsetHandlerLock.Unlock()
-
-	go func() {
-		for {
-			select {
-			case <-notify:
-				return
-			case request := <-client.proofRequests:
-				handler(request.challenge, request.response)
-			}
-		}
-	}()
-
-}
-
-// SetVerificationHandler -- Register a verification request handler.
-func (client *client) SetVerificationHandler(handler VerificationHandler) {
-
-	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetVerificationHandler()
-	client.unsetVerificationHandler = func() {
-		close(notify)
-	}
-	client.unsetHandlerLock.Unlock()
-
-	go func() {
-		for {
-			select {
-			case <-notify:
-				return
-			case request := <-client.verificationRequests:
-				handler(request.proof, request.response)
-			}
-		}
-	}()
-
-}
-
 // New -- Create a client.
 func (config *Config) New() (Client, func(), error) {
 	return config.create()
@@ -306,6 +207,9 @@ func (config *Config) create() (*client, func(), error) {
 
 	// Create a challenge request queue.
 	client.challengeRequests = make(chan challengeRequest, 1)
+
+	// Create a commitment request queue.
+	client.commitmentRequests = make(chan commitmentRequest, 1)
 
 	// Create a context.
 	client.context = context.Background()
@@ -389,6 +293,7 @@ func (config *Config) create() (*client, func(), error) {
 
 	// Initialize the handler deregistration functions.
 	client.unsetArtifactHandler = func() {}
+	client.unsetCommitmentHandler = func() {}
 	client.unsetChallengeHandler = func() {}
 	client.unsetHandlerLock = &sync.Mutex{}
 	client.unsetProofHandler = func() {}
@@ -413,6 +318,7 @@ func (config *Config) create() (*client, func(), error) {
 	// Ready for action!
 	return client, func() {
 		client.unsetArtifactHandler()
+		client.unsetCommitmentHandler()
 		client.unsetChallengeHandler()
 		client.unsetProofHandler()
 		client.unsetVerificationHandler()
