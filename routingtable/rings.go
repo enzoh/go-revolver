@@ -71,21 +71,32 @@ func (r *ring) Remove(pid peer.ID) {
 // Return k random peers in the ring.  If a peer is in the preferred list,
 // return it.
 func (r *ring) Recommend(k int, preferred []peer.ID) []peer.ID {
-	var recommended []peer.ID
+	recommended := make(map[peer.ID]bool)
 
+	// Recommend preferred peers if possible
 	for _, pid := range r.peers {
 		for _, pref := range preferred {
 			if pid == pref {
-				recommended = append(recommended, pid)
+				recommended[pid] = true
 			}
 		}
 	}
 
+	// Fill the rest of the recommendation with a random sample of the peers
 	for _, i := range rand.Perm(len(r.peers)) {
-		recommended = append(recommended, r.peers[i])
+		if len(recommended) >= k {
+			break
+		}
+		recommended[r.peers[i]] = true
 	}
 
-	return recommended[:k]
+	// Return a list
+	var res []peer.ID
+	for pid := range recommended {
+		res = append(res, pid)
+	}
+
+	return res
 }
 
 // NewDefaultRingsRoutingTable creates a RoutingTable based on rings using
