@@ -98,7 +98,7 @@ func New(inboundCapacity, outboundCapacity, txQueueSize int, probe routingtable.
 		inboundCapacity:  inboundCapacity,
 		outboundCapacity: outboundCapacity,
 		peers:            make(map[peer.ID]peerctx),
-		routingTable:     routingtable.NewDefaultRingsRoutingTable(probe),
+		routingTable:     routingtable.NewRingsRoutingTable(routingtable.NewDefaultRingsConfig(probe)),
 		txQueueSize:      txQueueSize,
 		Logger:           logging.MustGetLogger("streamstore"),
 		RWMutex:          sync.RWMutex{},

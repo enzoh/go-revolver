@@ -15,9 +15,8 @@ type LatencyProbeFn func(peer.ID) (time.Duration, error)
 
 // RingsConfig configures a Ring-based routing table
 type RingsConfig struct {
-	RingsPerNode        int
-	NodesPerRing        int
-	BaseLatency         float64
+	RingsCount          int
+	BaseLatency         time.Duration
 	LatencyGrowthFactor float64
 	SampleSize          int
 	SamplePeriod        time.Duration
@@ -43,7 +42,7 @@ type ringsRoutingTable struct {
 
 	// The latency range of the rings.  Specifically, for the nth ring, the
 	// latency range is [latRanges[n], latRanges[n+1]).
-	latRanges []float64
+	latRanges []time.Duration
 
 	// For storing latency info
 	metrics peerstore.Metrics
@@ -86,33 +85,31 @@ func (r *ring) Recommend(count int, exclude map[peer.ID]bool) []peer.ID {
 	return recommended
 }
 
-// NewDefaultRingsRoutingTable creates a RoutingTable based on rings using
-// default parameters.
-func NewDefaultRingsRoutingTable(probe LatencyProbeFn) RoutingTable {
-	return NewRingsRoutingTable(RingsConfig{
-		RingsPerNode:        8,
-		NodesPerRing:        16,
-		BaseLatency:         8,
+// NewDefaultRingsConfig creates a RingsConfig with default parameters.
+func NewDefaultRingsConfig(probe LatencyProbeFn) RingsConfig {
+	return RingsConfig{
+		RingsCount:          8,
+		BaseLatency:         8 * time.Millisecond,
 		LatencyGrowthFactor: 2,
 		SampleSize:          16,
 		SamplePeriod:        30 * time.Second,
 		LatencyProbFn:       probe,
-	})
+	}
 }
 
 // NewRingsRoutingTable creates a RoutingTable with the given config.
 func NewRingsRoutingTable(conf RingsConfig) RoutingTable {
 	// Construct the latency ranges
 	// The first element is always going to be 0.
-	latRanges := []float64{0}
+	latRanges := []time.Duration{time.Duration(0)}
 	k := conf.BaseLatency
-	for i := 1; i < conf.RingsPerNode; i++ {
+	for i := 1; i < conf.RingsCount; i++ {
 		latRanges = append(latRanges, k)
-		k *= conf.LatencyGrowthFactor
+		k = time.Duration(float64(k) * conf.LatencyGrowthFactor)
 	}
 
 	var rings []*ring
-	for i := 0; i < conf.RingsPerNode; i++ {
+	for i := 0; i < conf.RingsCount; i++ {
 		rings = append(rings, &ring{})
 	}
 
@@ -177,7 +174,7 @@ func (r *ringsRoutingTable) populateRings() {
 	defer r.Unlock()
 
 	var rings []*ring
-	for i := 0; i < r.conf.RingsPerNode; i++ {
+	for i := 0; i < r.conf.RingsCount; i++ {
 		rings = append(rings, &ring{})
 	}
 
@@ -185,7 +182,7 @@ func (r *ringsRoutingTable) populateRings() {
 		latency := r.metrics.LatencyEWMA(pid)
 		// Find the ring that the peer belongs to
 		for i := len(r.latRanges) - 1; i >= 0; i-- {
-			if latency > time.Duration(r.latRanges[i]*float64(time.Millisecond)) {
+			if latency > r.latRanges[i] {
 				r.rings[i].Add(pid)
 			}
 		}
@@ -237,7 +234,7 @@ func (r *ringsRoutingTable) Recommend(count int, excludeList []peer.ID) []peer.I
 	}
 
 	// Compute how many nodes we want from each ring
-	nodesFromRing := make([]int, r.conf.RingsPerNode)
+	nodesFromRing := make([]int, r.conf.RingsCount)
 
 	// TODO: if count is less than the number of rings, we actually want to
 	// select from rings that are evenly spaced out.  For instance, if count is
@@ -247,7 +244,7 @@ func (r *ringsRoutingTable) Recommend(count int, excludeList []peer.ID) []peer.I
 	for i := 0; i < count; i++ {
 		nodesFromRing[j]++
 		j++
-		if j >= r.conf.RingsPerNode {
+		if j >= r.conf.RingsCount {
 			// Reset index
 			j = 0
 		}
