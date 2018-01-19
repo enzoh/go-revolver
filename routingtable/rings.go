@@ -68,35 +68,19 @@ func (r *ring) Remove(pid peer.ID) {
 	}
 }
 
-// Return k random peers in the ring.  If a peer is in the preferred list,
-// return it.
-func (r *ring) Recommend(k int, preferred []peer.ID) []peer.ID {
-	recommended := make(map[peer.ID]bool)
+// Return `count` random peers in the ring, except for those in the `exclude` list.
+func (r *ring) Recommend(count int, exclude map[peer.ID]bool) []peer.ID {
+	var recommended []peer.ID
 
-	// Recommend preferred peers if possible
-	for _, pid := range r.peers {
-		for _, pref := range preferred {
-			if pid == pref {
-				recommended[pid] = true
-			}
+	perm := rand.Perm(len(r.peers))
+	for i := 0; i < count || i < len(perm); i++ {
+		pid := r.peers[perm[i]]
+		if !exclude[pid] {
+			recommended = append(recommended, pid)
 		}
 	}
 
-	// Fill the rest of the recommendation with a random sample of the peers
-	for _, i := range rand.Perm(len(r.peers)) {
-		if len(recommended) >= k {
-			break
-		}
-		recommended[r.peers[i]] = true
-	}
-
-	// Return a list
-	var res []peer.ID
-	for pid := range recommended {
-		res = append(res, pid)
-	}
-
-	return res
+	return recommended
 }
 
 // NewDefaultRingsRoutingTable creates a RoutingTable based on rings using
@@ -235,7 +219,13 @@ func (r *ringsRoutingTable) Remove(pid peer.ID) {
 	// TODO: remove the peer from the metrics store too
 }
 
-func (r *ringsRoutingTable) Recommend(count int, preferred []peer.ID) []peer.ID {
+func (r *ringsRoutingTable) Recommend(count int, excludeList []peer.ID) []peer.ID {
+	// Use a set to make exclusion faster/nicer
+	exclude := make(map[peer.ID]bool)
+	for _, pid := range excludeList {
+		exclude[pid] = true
+	}
+
 	// Compute how many nodes we want from each ring
 	nodesFromRing := make([]int, r.conf.RingsPerNode)
 
@@ -255,14 +245,40 @@ func (r *ringsRoutingTable) Recommend(count int, preferred []peer.ID) []peer.ID 
 
 	var recommended []peer.ID
 	for i, count := range nodesFromRing {
-		recommended = append(recommended, r.rings[i].Recommend(count, preferred)...)
+		recommended = append(recommended, r.rings[i].Recommend(count, exclude)...)
 	}
+
+	// It's possible that some rings are so under-populated that they are not
+	// able to provide as many nodes as we requested.  We fill the rest of the
+	// recommendation with random samples.
+	if len(recommended) < count {
+		// Add to the exclude set so we don't recommend a peer twice
+		for _, pid := range recommended {
+			exclude[pid] = true
+		}
+
+		recommended = append(recommended, r.sample(count-len(recommended), exclude)...)
+	}
+
 	return recommended
 }
 
-// TODO
-func (r *ringsRoutingTable) Sample() []peer.ID {
-	return nil
+// Return a random sample of peers, except those in the `exclude` set
+func (r *ringsRoutingTable) sample(count int, exclude map[peer.ID]bool) []peer.ID {
+	var peers []peer.ID
+	for pid := range r.peers {
+		peers = append(peers, pid)
+	}
+
+	var sample []peer.ID
+	perm := rand.Perm(len(peers))
+	for i := 0; i < count || i < len(perm); i++ {
+		pid := peers[perm[i]]
+		if !exclude[pid] {
+			sample = append(sample, pid)
+		}
+	}
+	return sample
 }
 
 func (r *ringsRoutingTable) Size() int {

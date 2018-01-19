@@ -157,8 +157,8 @@ func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outbound bool) bool {
 }
 
 func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error, exclude peer.IDSlice) map[peer.ID]chan error {
-	// Apply the function to Sqrt(N) streams where N is the capacity of the
-	// stream store.
+	// Apply the function to Sqrt(N) streams where N is the total capacity of
+	// the stream store.
 	pids := ss.routingTable.Recommend(int(math.Sqrt(float64(ss.InboundCapacity()+ss.OutboundCapacity()))), exclude)
 	return ss.apply(f, exclude, pids)
 }

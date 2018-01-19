@@ -16,10 +16,7 @@ type RoutingTable interface {
 	// It also accepts a list of excluded peers, which won't be included in the
 	// recommended list.  The idea is that the caller may not want to gossip to
 	// these peers because they might already have the artifact.
-	Recommend(count int, preferred []peer.ID) []peer.ID
-
-	// Sample returns a subset of peers in the routing table.
-	Sample() []peer.ID
+	Recommend(count int, exclude []peer.ID) []peer.ID
 
 	// Size returns the number of peers in the routing table.
 	Size() int
