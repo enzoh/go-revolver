@@ -19,16 +19,17 @@ import (
 )
 
 type Report struct {
-	Addrs     []string
-	ClusterID int
-	Network   string
-	NodeID    string
-	Peers     int
-	ProcessID int
-	Streams   []string
-	Timestamp int64
-	UserData  string
-	Version   string
+	Addrs           []string
+	ClusterID       int
+	Network         string
+	NodeID          string
+	Peers           int
+	ProcessID       int
+	InboundStreams  []string
+	OutboundStreams []string
+	Timestamp       int64
+	UserData        string
+	Version         string
 }
 
 func main() {
@@ -84,22 +85,23 @@ func graph(reports map[string]Report, lock *sync.Mutex, ttl time.Duration) http.
 			}
 
 			nodes = append(nodes, map[string]interface{}{
-				"Addrs":     report.Addrs,
-				"ClusterID": report.ClusterID,
-				"Network":   report.Network,
-				"NodeID":    report.NodeID,
-				"Peers":     report.Peers,
-				"ProcessID": report.ProcessID,
-				"Streams":   len(report.Streams),
-				"Timestamp": report.Timestamp,
-				"UserData":  report.UserData,
-				"Version":   report.Version,
+				"Addrs":           report.Addrs,
+				"ClusterID":       report.ClusterID,
+				"Network":         report.Network,
+				"NodeID":          report.NodeID,
+				"Peers":           report.Peers,
+				"ProcessID":       report.ProcessID,
+				"InboundStreams":  len(report.InboundStreams),
+				"OutboundStreams": len(report.OutboundStreams),
+				"Timestamp":       report.Timestamp,
+				"UserData":        report.UserData,
+				"Version":         report.Version,
 			})
 
-			for i := range report.Streams {
+			for _, stream := range append(report.InboundStreams, report.OutboundStreams...) {
 				links = append(links, map[string]interface{}{
 					"source": report.NodeID,
-					"target": report.Streams[i],
+					"target": stream,
 				})
 			}
 

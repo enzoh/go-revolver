@@ -375,8 +375,10 @@ var HTML = []byte(`<!DOCTYPE html>
 						d.Addrs.join('<br/>- ') +
 						'<br/>Network: ' +
 						d.Network +
-						'<br/>Streams: ' +
-						d.Streams +
+						'<br/>InboundStreams: ' +
+						d.InboundStreams +
+						'<br/>OutboundStreams: ' +
+						d.OutboundStreams +
 						'<br/>Version: ' +
 						d.Version +
 						'</span>'

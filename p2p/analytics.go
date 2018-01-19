@@ -27,16 +27,17 @@ func (client *client) activateAnalytics() func() {
 	go func() {
 
 		type Report struct {
-			Addrs     []string
-			ClusterID int
-			Network   string
-			NodeID    string
-			Peers     int
-			ProcessID int
-			Streams   []string
-			Timestamp int64
-			UserData  string
-			Version   string
+			Addrs           []string
+			ClusterID       int
+			Network         string
+			NodeID          string
+			Peers           int
+			ProcessID       int
+			InboundStreams  []string
+			OutboundStreams []string
+			Timestamp       int64
+			UserData        string
+			Version         string
 		}
 
 		for {
@@ -63,10 +64,10 @@ func (client *client) activateAnalytics() func() {
 				report.Addrs = append(report.Addrs, addr.String())
 			}
 			for _, stream := range client.streamstore.InboundPeers() {
-				report.Streams = append(report.Streams, stream.Pretty())
+				report.InboundStreams = append(report.InboundStreams, stream.Pretty())
 			}
 			for _, stream := range client.streamstore.OutboundPeers() {
-				report.Streams = append(report.Streams, stream.Pretty())
+				report.OutboundStreams = append(report.OutboundStreams, stream.Pretty())
 			}
 
 			// Encode it.
