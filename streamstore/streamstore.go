@@ -116,12 +116,12 @@ func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outbound bool) bool {
 		delete(ss.peers, pid)
 	}
 
-	if outbound && ss.OutboundSize() >= ss.OutboundCapacity() {
+	if outbound && ss.outboundSize() >= ss.OutboundCapacity() {
 		ss.Debug("Cannot add", pid, "to stream store: too many outbound connections")
 		return false
 	}
 
-	if !outbound && ss.InboundSize() >= ss.InboundCapacity() {
+	if !outbound && ss.inboundSize() >= ss.InboundCapacity() {
 		ss.Debug("Cannot add", pid, "to stream store: too many inbound connections")
 		return false
 	}
@@ -267,6 +267,13 @@ func (ss *streamstore) Remove(pid peer.ID) {
 }
 
 func (ss *streamstore) InboundSize() int {
+	ss.RLock()
+	defer ss.RUnlock()
+
+	return ss.inboundSize()
+}
+
+func (ss *streamstore) inboundSize() int {
 	var count int
 	for _, ctx := range ss.peers {
 		if !ctx.outbound {
@@ -277,6 +284,13 @@ func (ss *streamstore) InboundSize() int {
 }
 
 func (ss *streamstore) OutboundSize() int {
+	ss.RLock()
+	defer ss.RUnlock()
+
+	return ss.outboundSize()
+}
+
+func (ss *streamstore) outboundSize() int {
 	var count int
 	for _, ctx := range ss.peers {
 		if ctx.outbound {
