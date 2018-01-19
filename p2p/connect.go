@@ -28,18 +28,11 @@ func (client *client) discoverStreams() func() {
 
 	// Replenish the stream store.
 	go func() {
-		rate := math.Log(120) / 30
-		then := time.Now()
 		for {
 			select {
 			case <-notify:
 				return
-			default:
-				if time.Since(then) < 30*time.Second {
-					time.Sleep(time.Second * time.Duration(math.Exp(rate*time.Since(then).Seconds())))
-				} else {
-					time.Sleep(120 * time.Second)
-				}
+			case <-time.After(1 * time.Second):
 				if client.streamstore.OutboundSize() < client.streamstore.OutboundCapacity() {
 					client.replenishStreamstore()
 				}
