@@ -14,18 +14,20 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/enzoh/go-logging"
 	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 
-	"github.com/enzoh/go-logging"
+	"github.com/dfinity/go-revolver/routingtable"
+	"math"
 )
 
 // Streamstore is a thread-safe collection of peer-stream pairs.
 type Streamstore interface {
 
-	// Add a stream to the stream store.  The `outgoing` flag specifies if the
-	// stream is an outgoing stream.
-	Add(peerID peer.ID, stream net.Stream, outgoing bool) bool
+	// Add a stream to the stream store.  The `outbound` flag specifies if the
+	// stream is an outbound stream.
+	Add(peerID peer.ID, stream net.Stream, outbound bool) bool
 
 	// Remove a stream from the stream store.
 	Remove(peer.ID)
@@ -33,49 +35,57 @@ type Streamstore interface {
 	// Remove all streams from the stream store.
 	Purge()
 
-	// Apply a function to every outgoing stream in the stream store except
+	// Apply a function to a subset of streams in the stream store except
 	// those specified in a sorted exclude list.
 	Apply(func(peer.ID, io.Writer) error, peer.IDSlice) map[peer.ID]chan error
 
-	// Get the peers associated with incoming streams.
-	IncomingPeers() []peer.ID
+	// Apply a function to every stream in the stream store except
+	// those specified in a sorted exclude list.
+	ApplyAll(func(peer.ID, io.Writer) error, peer.IDSlice) map[peer.ID]chan error
 
-	// Get the peers associated with the outgoing streams.
-	OutgoingPeers() []peer.ID
+	// Get the peers associated with inbound streams.
+	InboundPeers() []peer.ID
 
-	// Get the incoming capacity of the stream store.
-	IncomingCapacity() int
+	// Get the peers associated with the outbound streams.
+	OutboundPeers() []peer.ID
 
-	// Get the outgoing capacity of the stream store.
-	OutgoingCapacity() int
+	// Get the inbound capacity of the stream store.
+	InboundCapacity() int
 
-	// Get the current number of incoming streams.
-	IncomingSize() int
+	// Get the outbound capacity of the stream store.
+	OutboundCapacity() int
 
-	// Get the current number of outgoing streams.
-	OutgoingSize() int
+	// Get the current number of inbound streams.
+	InboundSize() int
+
+	// Get the current number of outbound streams.
+	OutboundSize() int
 }
 
 type streamstore struct {
-	incCapacity int
-	outCapacity int
+	inboundCapacity  int
+	outboundCapacity int
 
-	incPeers map[peer.ID]incCtx
-	outPeers map[peer.ID]outCtx
+	peers        map[peer.ID]peerctx
+	routingTable routingtable.RoutingTable
 
 	txQueueSize int
 	*logging.Logger
-	*sync.Mutex
+	sync.RWMutex
 }
 
-type outCtx struct {
+type peerctx struct {
+	outbound bool
 	shutdown chan struct{}
 	queue    chan transaction
 	stream   net.Stream
 }
 
-type incCtx struct {
-	stream net.Stream
+// Release resources associated with this context.
+func (p *peerctx) Close() error {
+	close(p.shutdown)
+	close(p.queue)
+	return p.stream.Close()
 }
 
 type transaction struct {
@@ -85,79 +95,83 @@ type transaction struct {
 }
 
 // New creates a stream store.
-func New(incCapacity, outCapacity, txQueueSize int) Streamstore {
+func New(inboundCapacity, outboundCapacity, txQueueSize int) Streamstore {
 	return &streamstore{
-		incCapacity: incCapacity,
-		outCapacity: outCapacity,
-		incPeers:    make(map[peer.ID]incCtx),
-		outPeers:    make(map[peer.ID]outCtx),
-		txQueueSize: txQueueSize,
-		Logger:      logging.MustGetLogger("streamstore"),
-		Mutex:       &sync.Mutex{},
+		inboundCapacity:  inboundCapacity,
+		outboundCapacity: outboundCapacity,
+		peers:            make(map[peer.ID]peerctx),
+		routingTable:     routingtable.NewDefaultRingsRoutingTable(),
+		txQueueSize:      txQueueSize,
+		Logger:           logging.MustGetLogger("streamstore"),
+		RWMutex:          sync.RWMutex{},
 	}
 }
 
-func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outgoing bool) bool {
+func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outbound bool) bool {
 	ss.Lock()
 	defer ss.Unlock()
 
-	if outgoing {
-		ctx, exists := ss.outPeers[pid]
-		if exists {
-			ss.Debug("Removing", pid, "from stream store")
-			close(ctx.shutdown)
-			ctx.stream.Close()
-			delete(ss.outPeers, pid)
-		} else {
-			if ss.OutgoingSize() >= ss.OutgoingCapacity() {
-				ss.Debug("Cannot add", pid, "to stream store")
-				return false
-			}
-		}
-		ctx = outCtx{
-			make(chan struct{}),
-			make(chan transaction, ss.txQueueSize),
-			stream,
-		}
-		go func() {
-			for {
-				select {
-				case <-ctx.shutdown:
-					return
-				case tx := <-ctx.queue:
-					ss.Debug("Processing transaction for", pid)
-					err := tx.query(pid, ctx.stream)
-					ss.Debug("Recording result for", pid)
-					tx.Lock()
-					tx.result[pid] <- err
-					tx.Unlock()
-				}
-			}
-		}()
-		ss.Debug("Adding outgoing stream", pid, "to stream store")
-		ss.outPeers[pid] = ctx
-	} else {
-		ctx, exists := ss.incPeers[pid]
-		if exists {
-			ss.Debug("Removing", pid, "from stream store")
-			ctx.stream.Close()
-			delete(ss.incPeers, pid)
-		} else {
-			if ss.IncomingSize() >= ss.IncomingCapacity() {
-				ss.Debug("Cannot add", pid, "to stream store")
-				return false
-			}
-		}
-		ctx = incCtx{
-			stream,
-		}
-		ss.Debug("Adding incoming stream", pid, "to stream store")
-		ss.incPeers[pid] = ctx
+	ctx, exists := ss.peers[pid]
+	if exists {
+		ss.Debug("Removing", pid, "from stream store")
+		ctx.Close()
+		delete(ss.peers, pid)
 	}
+
+	if outbound && ss.OutboundSize() >= ss.OutboundCapacity() {
+		ss.Debug("Cannot add", pid, "to stream store: too many outbound connections")
+		return false
+	}
+
+	if !outbound && ss.InboundSize() >= ss.InboundCapacity() {
+		ss.Debug("Cannot add", pid, "to stream store: too many inbound connections")
+		return false
+	}
+
+	ctx = peerctx{
+		outbound: outbound,
+		shutdown: make(chan struct{}),
+		queue:    make(chan transaction, ss.txQueueSize),
+		stream:   stream,
+	}
+
+	go func() {
+		for {
+			select {
+			case <-ctx.shutdown:
+				return
+			case tx := <-ctx.queue:
+				ss.Debug("Processing transaction for", pid)
+				err := tx.query(pid, ctx.stream)
+				ss.Debug("Recording result for", pid)
+				tx.Lock()
+				tx.result[pid] <- err
+				tx.Unlock()
+			}
+		}
+	}()
+	ss.Debug("Adding stream", pid, "to stream store")
+	ss.peers[pid] = ctx
+	ss.routingTable.Add(pid)
 	return true
 }
 
 func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error, exclude peer.IDSlice) map[peer.ID]chan error {
+	// Apply the function to Sqrt(N) streams where N is the capacity of the
+	// stream store.
+	pids := ss.routingTable.Recommend(int(math.Sqrt(float64(ss.InboundCapacity()+ss.OutboundCapacity()))), exclude)
+	return ss.apply(f, exclude, pids)
+}
+
+func (ss *streamstore) ApplyAll(f func(peer.ID, io.Writer) error, exclude peer.IDSlice) map[peer.ID]chan error {
+	var pids []peer.ID
+	for pid := range ss.peers {
+		pids = append(pids, pid)
+	}
+	return ss.apply(f, exclude, pids)
+}
+
+func (ss *streamstore) apply(f func(peer.ID, io.Writer) error, exclude peer.IDSlice, peers peer.IDSlice) map[peer.ID]chan error {
 	ss.Lock()
 	defer ss.Unlock()
 	tx := transaction{
@@ -166,15 +180,15 @@ func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error, exclude peer.IDSl
 		&sync.Mutex{},
 	}
 	var group sync.WaitGroup
-	for peerID, peerCtx := range ss.outPeers {
+	for _, pid := range peers {
+		pid := pid
+		ctx := ss.peers[pid]
 		i := sort.Search(len(exclude), func(i int) bool {
-			return exclude[i] >= peerID
+			return exclude[i] >= pid
 		})
-		if i < len(exclude) && exclude[i] == peerID {
+		if i < len(exclude) && exclude[i] == pid {
 			continue
 		}
-		pid := peerID
-		ctx := peerCtx
 		group.Add(1)
 		go func() {
 			defer group.Done()
@@ -197,30 +211,34 @@ func (ss *streamstore) Apply(f func(peer.ID, io.Writer) error, exclude peer.IDSl
 	return tx.result
 }
 
-func (ss *streamstore) IncomingCapacity() int {
-	return ss.incCapacity
+func (ss *streamstore) InboundCapacity() int {
+	return ss.inboundCapacity
 }
 
-func (ss *streamstore) OutgoingCapacity() int {
-	return ss.outCapacity
+func (ss *streamstore) OutboundCapacity() int {
+	return ss.outboundCapacity
 }
 
-func (ss *streamstore) IncomingPeers() []peer.ID {
-	ss.Lock()
-	defer ss.Unlock()
+func (ss *streamstore) InboundPeers() []peer.ID {
+	ss.RLock()
+	defer ss.RUnlock()
 	var peers []peer.ID
-	for peerID := range ss.incPeers {
-		peers = append(peers, peerID)
+	for pid, ctx := range ss.peers {
+		if !ctx.outbound {
+			peers = append(peers, pid)
+		}
 	}
 	return peers
 }
 
-func (ss *streamstore) OutgoingPeers() []peer.ID {
-	ss.Lock()
-	defer ss.Unlock()
+func (ss *streamstore) OutboundPeers() []peer.ID {
+	ss.RLock()
+	defer ss.RUnlock()
 	var peers []peer.ID
-	for peerID := range ss.outPeers {
-		peers = append(peers, peerID)
+	for pid, ctx := range ss.peers {
+		if ctx.outbound {
+			peers = append(peers, pid)
+		}
 	}
 	return peers
 }
@@ -229,45 +247,43 @@ func (ss *streamstore) Purge() {
 	ss.Lock()
 	defer ss.Unlock()
 
-	for peerID, ctx := range ss.incPeers {
-		pid := peerID
-		ss.Debug("Removing incoming stream", pid, "from stream store")
-		ctx.stream.Close()
+	for pid, ctx := range ss.peers {
+		ss.Debug("Removing stream", pid, "from stream store")
+		ctx.Close()
 	}
 
-	for peerID, ctx := range ss.outPeers {
-		pid := peerID
-		ss.Debug("Removing outgoing stream", pid, "from stream store")
-		close(ctx.shutdown)
-		ctx.stream.Close()
-	}
-
-	ss.incPeers = make(map[peer.ID]incCtx)
-	ss.outPeers = make(map[peer.ID]outCtx)
+	ss.peers = make(map[peer.ID]peerctx)
 }
 
 func (ss *streamstore) Remove(pid peer.ID) {
 	ss.Lock()
 	defer ss.Unlock()
 
-	if ctx, exists := ss.outPeers[pid]; exists {
-		ss.Debug("Removing outgoing stream", pid, "from stream store")
-		close(ctx.shutdown)
-		ctx.stream.Close()
-		delete(ss.outPeers, pid)
+	if ctx, exists := ss.peers[pid]; exists {
+		ss.Debug("Removing stream", pid, "from stream store")
+		ctx.Close()
+		delete(ss.peers, pid)
 	}
 
-	if ctx, exists := ss.incPeers[pid]; exists {
-		ss.Debug("Removing incoming stream", pid, "from stream store")
-		ctx.stream.Close()
-		delete(ss.incPeers, pid)
+	ss.routingTable.Remove(pid)
+}
+
+func (ss *streamstore) InboundSize() int {
+	var count int
+	for _, ctx := range ss.peers {
+		if !ctx.outbound {
+			count++
+		}
 	}
+	return count
 }
 
-func (ss *streamstore) IncomingSize() int {
-	return len(ss.incPeers)
-}
-
-func (ss *streamstore) OutgoingSize() int {
-	return len(ss.outPeers)
+func (ss *streamstore) OutboundSize() int {
+	var count int
+	for _, ctx := range ss.peers {
+		if ctx.outbound {
+			count++
+		}
+	}
+	return count
 }

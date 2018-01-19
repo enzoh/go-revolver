@@ -13,9 +13,9 @@ type RoutingTable interface {
 	Remove(pid peer.ID)
 
 	// Recommend a slice of peers from a routing table for gossiping purposes.
-	// It also accepts a list of "preferred" peers.  The idea is that the caller
-	// would prefer peers that are currently connected, so we try to include the
-	// preferred peers in the recommended list if possible.
+	// It also accepts a list of excluded peers, which won't be included in the
+	// recommended list.  The idea is that the caller may not want to gossip to
+	// these peers because they might already have the artifact.
 	Recommend(count int, preferred []peer.ID) []peer.ID
 
 	// Sample returns a subset of peers in the routing table.

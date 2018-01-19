@@ -103,9 +103,9 @@ func (r *ring) Recommend(k int, preferred []peer.ID) []peer.ID {
 // default parameters.
 func NewDefaultRingsRoutingTable() RoutingTable {
 	return NewRingsRoutingTable(RingsConfig{
-		RingsPerNode:        9,
+		RingsPerNode:        8,
 		NodesPerRing:        16,
-		BaseLatency:         2,
+		BaseLatency:         8,
 		LatencyGrowthFactor: 2,
 		SampleSize:          16,
 		SamplePeriod:        30 * time.Second,

@@ -50,8 +50,8 @@ type Config struct {
 	SampleSize                  int
 	SeedNodes                   []string
 	SpammerCacheSize            int
-	StreamstoreIncomingCapacity int
-	StreamstoreOutgoingCapacity int
+	StreamstoreInboundCapacity  int
+	StreamstoreOutboundCapacity int
 	StreamstoreQueueSize        int
 	Timeout                     time.Duration
 	Version                     string
@@ -90,8 +90,8 @@ func DefaultConfig() *Config {
 		SampleSize:                  4,
 		SeedNodes:                   nil,
 		SpammerCacheSize:            16384,
-		StreamstoreIncomingCapacity: 64,
-		StreamstoreOutgoingCapacity: 8,
+		StreamstoreInboundCapacity:  16,
+		StreamstoreOutboundCapacity: 48,
 		StreamstoreQueueSize:        8192,
 		Timeout:                     10 * time.Second,
 		Version:                     "0.1.0",
