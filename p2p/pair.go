@@ -12,7 +12,6 @@ import (
 	"fmt"
 
 	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
-	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 
 	"github.com/dfinity/go-revolver/util"
@@ -100,72 +99,28 @@ func (client *client) pairHandler(stream net.Stream) {
 		stream.Close()
 	}
 
-	// Check if the peer is closer than others in its bucket.
-	buckets := client.table.Buckets
-	targets := deal(client.streamstore.InboundCapacity(), len(buckets))
-	for i := range buckets {
-
-		if buckets[i].Has(pid) {
-
-			// Select peers from this bucket.
-			peers := client.streamstore.InboundPeers()
-			for j := 0; j < len(peers); j++ {
-				if !buckets[i].Has(peers[j]) {
-					copy(peers[j:], peers[j+1:])
-					peers = peers[:len(peers)-1]
-					j--
-				}
-			}
-
-			if len(peers)+1 > targets[i] {
-
-				// Sort the peers and select the overflow.
-				overflow := kbucket.SortClosestPeers(
-					append(peers, pid),
-					kbucket.ConvertPeerID(client.id),
-				)[targets[i]:]
-
-				// Check if the peer exists in the overflow.
-				for k := range overflow {
-					if overflow[k] == pid {
-						reject("closer peers exist in its bucket")
-						return
-					}
-				}
-
-				// Create space for the stream.
-				client.streamstore.Remove(overflow[len(overflow)-1])
-
-			}
-
-			// Add the inbound stream to the stream store.
-			if !client.streamstore.Add(pid, stream, false) {
-				reject(pid, " cannot be added to the stream store")
-				return
-			}
-
-			// Send an acknowledgement.
-			err := util.WriteWithTimeout(
-				stream,
-				[]byte{ack},
-				client.config.Timeout,
-			)
-			if err != nil {
-				client.logger.Warning("Cannot send data to", pid, err)
-				client.streamstore.Remove(pid)
-				return
-			}
-
-			// Ready to exchange artifacts.
-			client.logger.Debug("Ready to exchange artifacts with", pid)
-			go client.process(stream)
-			return
-
-		}
-
+	// Add the inbound stream to the stream store.
+	if !client.streamstore.Add(pid, stream, false) {
+		reject(pid, " cannot be added to the stream store")
+		return
 	}
 
-	reject(pid, " does not exist in any bucket")
+	// Send an acknowledgement.
+	err := util.WriteWithTimeout(
+		stream,
+		[]byte{ack},
+		client.config.Timeout,
+	)
+	if err != nil {
+		client.logger.Warning("Cannot send data to", pid, err)
+		client.streamstore.Remove(pid)
+		return
+	}
+
+	// Ready to exchange artifacts.
+	client.logger.Debug("Ready to exchange artifacts with", pid)
+	go client.process(stream)
+	return
 
 }
 

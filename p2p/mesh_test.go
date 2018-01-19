@@ -13,16 +13,18 @@ import (
 	"time"
 )
 
+// The size of the network
+const N = 24
+
 // Show that twenty-four clients are capable of meshing within five seconds.
 func TestMesh(test *testing.T) {
-
-	const N = 24
 
 	setup := make(chan struct{}, N)
 	ready := make(chan struct{}, N)
 
 	config := DefaultConfig()
-	config.DisableAnalytics = true
+	config.AnalyticsURL = "http://localhost:8080/report"
+	config.AnalyticsInterval = time.Second
 	config.DisableNATPortMap = true
 	config.IP = "127.0.0.1"
 	config.Port = 5555
@@ -55,8 +57,8 @@ func TestMesh(test *testing.T) {
 
 	select {
 	case <-done:
-	case <-time.After(5 * time.Second):
-		test.Fatal("nodes failed to mesh within five seconds")
+	case <-time.After(10 * time.Second):
+		test.Fatal("nodes failed to mesh within 10 seconds")
 	}
 
 }
@@ -72,7 +74,7 @@ func newTestMeshClient(config *Config, setup chan struct{}, ready chan struct{})
 	setup <- struct{}{}
 
 	for {
-		if client.StreamCount() >= 6 {
+		if float64(client.StreamCount()) >= 12 {
 			break
 		}
 		time.Sleep(time.Second)

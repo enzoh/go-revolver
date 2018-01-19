@@ -9,11 +9,9 @@
 package p2p
 
 import (
-	"math"
 	"math/rand"
 	"time"
 
-	"gx/ipfs/QmSAFA8v42u4gpJNy1tb7vW3JiiXiaYDC2b845c2RnNSJL/go-libp2p-kbucket"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 )
 
@@ -33,9 +31,7 @@ func (client *client) discoverStreams() func() {
 			case <-notify:
 				return
 			case <-time.After(1 * time.Second):
-				if client.streamstore.OutboundSize() < client.streamstore.OutboundCapacity() {
-					client.replenishStreamstore()
-				}
+				client.replenishStreamstore()
 			}
 		}
 	}()
@@ -48,39 +44,30 @@ func (client *client) discoverStreams() func() {
 // Replenish the stream store, i.e. fill outbound streams to maximum capacity.
 func (client *client) replenishStreamstore() {
 
-	var delta []peer.ID
-	var peers []peer.ID
+	// We need to pair with this many more peers.
+	need := client.streamstore.OutboundCapacity() - client.streamstore.OutboundSize()
+	if need <= 0 {
+		return
+	}
 
-	buckets := client.table.Buckets
-	streams := client.streamstore.OutboundPeers()
-	targets := deal(client.streamstore.OutboundCapacity(), len(buckets))
+	// A set of peers that we are already connected with.
+	connectedPeers := make(map[peer.ID]bool)
+	for _, pid := range append(client.streamstore.InboundPeers(),
+		client.streamstore.OutboundPeers()...) {
+		connectedPeers[pid] = true
+	}
 
-	for i := range buckets {
+	// Iterate through the known peers randomly
+	knownPeers := client.table.ListPeers()
+	perm := rand.Perm(len(knownPeers))
 
-		peers = buckets[i].Peers()
-		delta = kbucket.SortClosestPeers(
-			difference(peers, streams),
-			kbucket.ConvertPeerID(client.id),
-		)
-
-		s := len(streams) - len(difference(streams, peers))
-		t := targets[i]
-
-		// Select candidates from this bucket.
-		for len(delta) > 0 {
-			if s >= t {
-				break
-			}
-			n := float64(len(delta))
-			j := int(math.Floor(math.Exp(math.Log(n+1)*rand.Float64()) - 1))
-			info := client.peerstore.PeerInfo(delta[j])
-			if info.ID != client.id && len(info.Addrs) != 0 {
-				client.pair(info.ID)
-				t--
-			}
-			delta = append(delta[:j], delta[j+1:]...)
+	for i := 0; i < len(knownPeers) && need > 0; i++ {
+		pid := knownPeers[perm[i]]
+		// If we are not already connected with it, connect with it.
+		if !connectedPeers[pid] {
+			client.pair(pid)
+			need--
 		}
-
 	}
 
 }
