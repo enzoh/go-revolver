@@ -13,6 +13,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	mathrand "math/rand"
 	"testing"
 	"time"
 
@@ -37,6 +38,11 @@ type client struct {
 	peerstore   peerstore.Peerstore
 	queue       chan [32]byte
 	streamstore Streamstore
+}
+
+// A latency prob function that returns random latency
+func randomProbe(_ peer.ID) (time.Duration, error) {
+	return time.Duration(mathrand.Intn(1000) * int(time.Millisecond)), nil
 }
 
 // Create a client.
@@ -78,7 +84,7 @@ func new(test *testing.T, port uint16) *client {
 	client.queue = make(chan [32]byte, QUEUE_SIZE)
 
 	// Create a stream store.
-	client.streamstore = New(1, QUEUE_SIZE)
+	client.streamstore = New(1, 1, QUEUE_SIZE, randomProbe)
 
 	// Create a network.
 	network, err := swarm.NewNetwork(
@@ -101,7 +107,7 @@ func new(test *testing.T, port uint16) *client {
 	// Register a service with the service host.
 	client.host.SetStreamHandler("/test", func(stream net.Stream) {
 		pid := stream.Conn().RemotePeer()
-		if client.streamstore.Add(pid, stream) {
+		if client.streamstore.Add(pid, stream, false) {
 			go client.read(stream)
 		} else {
 			test.Fatal("Cannot add", pid, "to stream store")
@@ -156,7 +162,7 @@ func TestStreamstore(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	if client1.streamstore.Add(client2.id, stream) {
+	if client1.streamstore.Add(client2.id, stream, true) {
 		go client1.read(stream)
 	} else {
 		test.Fatal("Cannot add", client2.id, "to stream store")
