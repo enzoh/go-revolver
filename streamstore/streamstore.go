@@ -10,6 +10,7 @@ package streamstore
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"sort"
@@ -76,14 +77,12 @@ type streamstore struct {
 
 type peerctx struct {
 	outbound bool
-	shutdown chan struct{}
 	queue    chan transaction
 	stream   net.Stream
 }
 
 // Release resources associated with this context.
 func (p *peerctx) Close() error {
-	close(p.shutdown)
 	close(p.queue)
 	return p.stream.Close()
 }
@@ -130,7 +129,6 @@ func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outbound bool) bool {
 
 	ctx = peerctx{
 		outbound: outbound,
-		shutdown: make(chan struct{}),
 		queue:    make(chan transaction, ss.txQueueSize),
 		stream:   stream,
 	}
@@ -138,10 +136,14 @@ func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outbound bool) bool {
 	go func() {
 		for {
 			select {
-			case <-ctx.shutdown:
-				return
-			case tx := <-ctx.queue:
+			case tx, ok := <-ctx.queue:
+				if !ok {
+					return
+				}
 				ss.Debug("Processing transaction for", pid)
+				fmt.Printf("tx: %v", tx)
+				fmt.Printf("query: %v", tx.query)
+				fmt.Printf("ctx: %v", ctx)
 				err := tx.query(pid, ctx.stream)
 				ss.Debug("Recording result for", pid)
 				tx.Lock()

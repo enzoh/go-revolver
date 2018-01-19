@@ -76,7 +76,7 @@ func (r *ring) Recommend(count int, exclude map[peer.ID]bool) []peer.ID {
 	var recommended []peer.ID
 
 	perm := rand.Perm(len(r.peers))
-	for i := 0; i < count || i < len(perm); i++ {
+	for i := 0; i < count && i < len(perm); i++ {
 		pid := r.peers[perm[i]]
 		if !exclude[pid] {
 			recommended = append(recommended, pid)
@@ -111,8 +111,14 @@ func NewRingsRoutingTable(conf RingsConfig) RoutingTable {
 		k *= conf.LatencyGrowthFactor
 	}
 
+	var rings []*ring
+	for i := 0; i < conf.RingsPerNode; i++ {
+		rings = append(rings, &ring{})
+	}
+
 	r := &ringsRoutingTable{
 		conf:      conf,
+		rings:     rings,
 		peers:     make(map[peer.ID]bool),
 		metrics:   peerstore.NewMetrics(),
 		latRanges: latRanges,
@@ -276,7 +282,7 @@ func (r *ringsRoutingTable) sample(count int, exclude map[peer.ID]bool) []peer.I
 
 	var sample []peer.ID
 	perm := rand.Perm(len(peers))
-	for i := 0; i < count || i < len(perm); i++ {
+	for i := 0; i < count && i < len(perm); i++ {
 		pid := peers[perm[i]]
 		if !exclude[pid] {
 			sample = append(sample, pid)
