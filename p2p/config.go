@@ -30,6 +30,7 @@ type Config struct {
 	ArtifactQueueSize           int
 	ChallengeMaxBufferSize      uint32
 	ClusterID                   int
+	CommitmentMaxBufferSize     uint32
 	DisableAnalytics            bool
 	DisableBroadcast            bool
 	DisableNATPortMap           bool
@@ -61,20 +62,21 @@ type Config struct {
 // DefaultConfig -- Get the default configuration parameters.
 func DefaultConfig() *Config {
 	return &Config{
-		AnalyticsInterval:      time.Minute,
-		AnalyticsURL:           "https://analytics.dfinity.build/report",
-		AnalyticsUserData:      "",
-		ArtifactCacheSize:      65536,
-		ArtifactChunkSize:      65536,
-		ArtifactMaxBufferSize:  8388608,
-		ArtifactQueueSize:      8,
-		ChallengeMaxBufferSize: 32,
-		ClusterID:              0,
-		DisableAnalytics:       false,
-		DisableBroadcast:       false,
-		DisableNATPortMap:      false,
-		DisablePeerDiscovery:   false,
-		DisableStreamDiscovery: false,
+		AnalyticsInterval:       time.Minute,
+		AnalyticsURL:            "https://analytics.dfinity.build/report",
+		AnalyticsUserData:       "",
+		ArtifactCacheSize:       65536,
+		ArtifactChunkSize:       65536,
+		ArtifactMaxBufferSize:   8388608,
+		ArtifactQueueSize:       8,
+		ChallengeMaxBufferSize:  32,
+		ClusterID:               0,
+		CommitmentMaxBufferSize: 32,
+		DisableAnalytics:        false,
+		DisableBroadcast:        false,
+		DisableNATPortMap:       false,
+		DisablePeerDiscovery:    false,
+		DisableStreamDiscovery:  false,
 		IP:                          "0.0.0.0",
 		KBucketSize:                 16,
 		LatencyTolerance:            time.Minute,
@@ -186,14 +188,14 @@ func (config *Config) validate() error {
 		}
 	}
 
-	// The stream store incoming capacity must be a positive integer.
-	if config.StreamstoreIncomingCapacity <= 0 {
-		return fmt.Errorf("Invalid stream store incoming capacity: %d", config.StreamstoreIncomingCapacity)
+	// The stream store inbound capacity must be a positive integer.
+	if config.StreamstoreInboundCapacity <= 0 {
+		return fmt.Errorf("Invalid stream store inbound capacity: %d", config.StreamstoreInboundCapacity)
 	}
 
-	// The stream store outgoing capacity must be a positive integer.
-	if config.StreamstoreOutgoingCapacity <= 0 {
-		return fmt.Errorf("Invalid stream store incoming capacity: %d", config.StreamstoreOutgoingCapacity)
+	// The stream store outbound capacity must be a positive integer.
+	if config.StreamstoreOutboundCapacity <= 0 {
+		return fmt.Errorf("Invalid stream store outbound capacity: %d", config.StreamstoreOutboundCapacity)
 	}
 
 	// The stream store transaction queue size must be a positive integer.

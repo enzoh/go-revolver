@@ -62,10 +62,10 @@ func (client *client) activateAnalytics() func() {
 			for _, addr := range client.host.Addrs() {
 				report.Addrs = append(report.Addrs, addr.String())
 			}
-			for _, stream := range client.streamstore.IncomingPeers() {
+			for _, stream := range client.streamstore.InboundPeers() {
 				report.Streams = append(report.Streams, stream.Pretty())
 			}
-			for _, stream := range client.streamstore.OutgoingPeers() {
+			for _, stream := range client.streamstore.OutboundPeers() {
 				report.Streams = append(report.Streams, stream.Pretty())
 			}
 
