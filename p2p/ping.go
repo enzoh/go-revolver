@@ -20,66 +20,74 @@ import (
 	"github.com/dfinity/go-revolver/util"
 )
 
-// Ping a peer.
-func (client *client) ping(peerId peer.ID) error {
-
+func (c *client) probeLatency(pid peer.ID) (zero time.Duration, err error) {
 	// Log this action.
-	pid := peerId
-	client.logger.Debug("Ping", pid)
+	c.logger.Debug("Ping", pid)
 
 	// Connect to the target peer.
-	stream, err := client.host.NewStream(
-		client.context,
+	stream, err := c.host.NewStream(
+		c.context,
 		pid,
-		client.protocol+"/ping",
+		c.protocol+"/ping",
 	)
 	if err != nil {
-		addrs := client.peerstore.PeerInfo(pid).Addrs
-		client.logger.Debug("Cannot connect to", pid, "at", addrs, err)
-		client.peerstore.ClearAddrs(pid)
-		client.table.Remove(pid)
-		return err
+		addrs := c.peerstore.PeerInfo(pid).Addrs
+		c.logger.Debug("Cannot connect to", pid, "at", addrs, err)
+		c.peerstore.ClearAddrs(pid)
+		c.table.Remove(pid)
+		return zero, err
 	}
 	defer stream.Close()
 
 	// Generate random data.
-	wbuf := make([]byte, client.config.PingBufferSize)
+	wbuf := make([]byte, c.config.PingBufferSize)
 	_, err = rand.Reader.Read(wbuf)
 	if err != nil {
-		client.logger.Warning("Cannot generate random data", err)
-		return err
+		c.logger.Warning("Cannot generate random data", err)
+		return zero, err
 	}
 
 	// Observe the current time.
 	before := time.Now()
 
 	// Send data to the target peer.
-	err = util.WriteWithTimeout(stream, wbuf, client.config.Timeout)
+	err = util.WriteWithTimeout(stream, wbuf, c.config.Timeout)
 	if err != nil {
-		client.logger.Warning("Cannot send data to", pid, err)
-		return err
+		c.logger.Warning("Cannot send data to", pid, err)
+		return zero, err
 	}
 
 	// Receive data from the target peer.
 	rbuf, err := util.ReadWithTimeout(
 		stream,
-		client.config.PingBufferSize,
-		client.config.Timeout,
+		c.config.PingBufferSize,
+		c.config.Timeout,
 	)
 	if err != nil {
-		client.logger.Warning("Cannot receive data from", pid, err)
-		return err
+		c.logger.Warning("Cannot receive data from", pid, err)
+		return zero, err
 	}
 
 	// Verify that the data sent and received is the same.
 	if !bytes.Equal(wbuf, rbuf) {
 		err = errors.New("Corrupt data!")
-		client.logger.Warning("Cannot verify data received from", pid, err)
+		c.logger.Warning("Cannot verify data received from", pid, err)
+		return zero, err
+	}
+
+	return time.Since(before), nil
+}
+
+// Ping a peer.
+func (c *client) ping(pid peer.ID) error {
+	// Measure the latency
+	latency, err := c.probeLatency(pid)
+	if err != nil {
 		return err
 	}
 
 	// Record the observed latency.
-	client.peerstore.RecordLatency(pid, time.Since(before))
+	c.peerstore.RecordLatency(pid, latency)
 
 	// Success.
 	return nil
@@ -87,38 +95,38 @@ func (client *client) ping(peerId peer.ID) error {
 }
 
 // Handle incomming pings.
-func (client *client) pingHandler(stream net.Stream) {
+func (c *client) pingHandler(stream net.Stream) {
 
 	defer stream.Close()
 
 	// Log this action.
 	pid := stream.Conn().RemotePeer()
-	client.logger.Debug("Pong", pid)
+	c.logger.Debug("Pong", pid)
 
 	// Receive data from the target peer.
 	rbuf, err := util.ReadWithTimeout(
 		stream,
-		client.config.PingBufferSize,
-		client.config.Timeout,
+		c.config.PingBufferSize,
+		c.config.Timeout,
 	)
 	if err != nil {
-		client.logger.Warning("Cannot receive data from", pid, err)
+		c.logger.Warning("Cannot receive data from", pid, err)
 		return
 	}
 
 	// Send data to the target peer.
-	err = util.WriteWithTimeout(stream, rbuf, client.config.Timeout)
+	err = util.WriteWithTimeout(stream, rbuf, c.config.Timeout)
 	if err != nil {
-		client.logger.Warning("Cannot send data to", pid, err)
+		c.logger.Warning("Cannot send data to", pid, err)
 	}
 
 	// Update the routing table.
-	client.table.Update(pid)
+	c.table.Update(pid)
 
 }
 
 // Register the ping handler.
-func (client *client) registerPingService() {
-	uri := client.protocol + "/ping"
-	client.host.SetStreamHandler(uri, client.pingHandler)
+func (c *client) registerPingService() {
+	uri := c.protocol + "/ping"
+	c.host.SetStreamHandler(uri, c.pingHandler)
 }

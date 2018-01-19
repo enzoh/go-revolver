@@ -11,6 +11,7 @@ package streamstore
 import (
 	"errors"
 	"io"
+	"math"
 	"sort"
 	"sync"
 
@@ -19,7 +20,6 @@ import (
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 
 	"github.com/dfinity/go-revolver/routingtable"
-	"math"
 )
 
 // Streamstore is a thread-safe collection of peer-stream pairs.
@@ -95,12 +95,12 @@ type transaction struct {
 }
 
 // New creates a stream store.
-func New(inboundCapacity, outboundCapacity, txQueueSize int) Streamstore {
+func New(inboundCapacity, outboundCapacity, txQueueSize int, probe routingtable.LatencyProbeFn) Streamstore {
 	return &streamstore{
 		inboundCapacity:  inboundCapacity,
 		outboundCapacity: outboundCapacity,
 		peers:            make(map[peer.ID]peerctx),
-		routingTable:     routingtable.NewDefaultRingsRoutingTable(),
+		routingTable:     routingtable.NewDefaultRingsRoutingTable(probe),
 		txQueueSize:      txQueueSize,
 		Logger:           logging.MustGetLogger("streamstore"),
 		RWMutex:          sync.RWMutex{},

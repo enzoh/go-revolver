@@ -278,6 +278,7 @@ func (config *Config) create() (*client, func(), error) {
 		client.config.StreamstoreInboundCapacity,
 		client.config.StreamstoreOutboundCapacity,
 		client.config.StreamstoreQueueSize,
+		client.probeLatency,
 	)
 
 	// Create a routing table.

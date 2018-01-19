@@ -10,6 +10,9 @@ import (
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 )
 
+// LatencyProbeFn is a function that accepts a peer ID and returns a latency.
+type LatencyProbeFn func(peer.ID) (time.Duration, error)
+
 // RingsConfig configures a Ring-based routing table
 type RingsConfig struct {
 	RingsPerNode        int
@@ -20,7 +23,7 @@ type RingsConfig struct {
 	SamplePeriod        time.Duration
 	// A function for retrieving the up-to-date latency information for a given
 	// peer.
-	LatencyProbFn func(peer.ID) (time.Duration, error)
+	LatencyProbFn LatencyProbeFn
 
 	Logger logging.Logger
 }
@@ -85,7 +88,7 @@ func (r *ring) Recommend(count int, exclude map[peer.ID]bool) []peer.ID {
 
 // NewDefaultRingsRoutingTable creates a RoutingTable based on rings using
 // default parameters.
-func NewDefaultRingsRoutingTable() RoutingTable {
+func NewDefaultRingsRoutingTable(probe LatencyProbeFn) RoutingTable {
 	return NewRingsRoutingTable(RingsConfig{
 		RingsPerNode:        8,
 		NodesPerRing:        16,
@@ -93,6 +96,7 @@ func NewDefaultRingsRoutingTable() RoutingTable {
 		LatencyGrowthFactor: 2,
 		SampleSize:          16,
 		SamplePeriod:        30 * time.Second,
+		LatencyProbFn:       probe,
 	})
 }
 
