@@ -227,6 +227,9 @@ func (r *ringsRoutingTable) Remove(pid peer.ID) {
 }
 
 func (r *ringsRoutingTable) Recommend(count int, excludeList []peer.ID) []peer.ID {
+	r.RLock()
+	defer r.RUnlock()
+
 	// Use a set to make exclusion faster/nicer
 	exclude := make(map[peer.ID]bool)
 	for _, pid := range excludeList {
