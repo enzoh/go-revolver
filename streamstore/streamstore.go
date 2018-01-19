@@ -10,7 +10,6 @@ package streamstore
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"sort"
@@ -141,9 +140,6 @@ func (ss *streamstore) Add(pid peer.ID, stream net.Stream, outbound bool) bool {
 					return
 				}
 				ss.Debug("Processing transaction for", pid)
-				fmt.Printf("tx: %v", tx)
-				fmt.Printf("query: %v", tx.query)
-				fmt.Printf("ctx: %v", ctx)
 				err := tx.query(pid, ctx.stream)
 				ss.Debug("Recording result for", pid)
 				tx.Lock()
