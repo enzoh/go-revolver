@@ -39,7 +39,7 @@ func (client *client) pair(peerId peer.ID) (bool, error) {
 	if err != nil {
 		addrs := client.peerstore.PeerInfo(pid).Addrs
 		client.logger.Debug("Cannot connect to", pid, "at", addrs, err)
-		client.peerstore.ClearAddrs(pid)
+		client.peerstore.SetAddrs(pid, addrs, 0)
 		client.table.Remove(pid)
 		return false, err
 	}
@@ -56,11 +56,11 @@ func (client *client) pair(peerId peer.ID) (bool, error) {
 		return false, err
 	}
 
-	// Add the outbound stream to the stream store.
+	// Add the stream to the stream store.
 	var success bool
-	if data[0] == ack && client.streamstore.Add(pid, stream, true) {
+	if data[0] == ack && client.streamstore.Add(pid, stream) {
 
-		// Ready to send artifacts.
+		// Ready to exchange artifacts.
 		client.logger.Debug("Ready to exchange artifacts with", pid)
 		go client.process(stream)
 		success = true
@@ -102,13 +102,13 @@ func (client *client) pairHandler(stream net.Stream) {
 
 	// Check if the peer is closer than others in its bucket.
 	buckets := client.table.Buckets
-	targets := deal(client.streamstore.InboundCapacity(), len(buckets))
+	targets := deal(client.streamstore.Capacity(), len(buckets))
 	for i := range buckets {
 
 		if buckets[i].Has(pid) {
 
 			// Select peers from this bucket.
-			peers := client.streamstore.InboundPeers()
+			peers := client.streamstore.Peers()
 			for j := 0; j < len(peers); j++ {
 				if !buckets[i].Has(peers[j]) {
 					copy(peers[j:], peers[j+1:])
@@ -138,8 +138,8 @@ func (client *client) pairHandler(stream net.Stream) {
 
 			}
 
-			// Add the inbound stream to the stream store.
-			if !client.streamstore.Add(pid, stream, false) {
+			// Add the stream to the stream store.
+			if !client.streamstore.Add(pid, stream) {
 				reject(pid, " cannot be added to the stream store")
 				return
 			}
@@ -174,3 +174,4 @@ func (client *client) registerPairService() {
 	uri := client.protocol + "/pair"
 	client.host.SetStreamHandler(uri, client.pairHandler)
 }
+

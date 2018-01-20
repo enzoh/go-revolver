@@ -134,7 +134,7 @@ func (client *client) PeerCount() int {
 
 // StreamCount -- Get the stream count.
 func (client *client) StreamCount() int {
-	return client.streamstore.InboundSize() + client.streamstore.OutboundSize()
+	return client.streamstore.Size()
 }
 
 // Send -- Send an artifact.
@@ -275,10 +275,8 @@ func (config *Config) create() (*client, func(), error) {
 
 	// Create a stream store.
 	client.streamstore = streamstore.New(
-		client.config.StreamstoreInboundCapacity,
-		client.config.StreamstoreOutboundCapacity,
+		client.config.StreamstoreCapacity,
 		client.config.StreamstoreQueueSize,
-		client.probeLatency,
 	)
 
 	// Create a routing table.

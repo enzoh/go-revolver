@@ -21,42 +21,41 @@ import (
 
 // Config -- This type provides all available options to configure a client.
 type Config struct {
-	AnalyticsInterval           time.Duration
-	AnalyticsURL                string
-	AnalyticsUserData           string
-	ArtifactCacheSize           int
-	ArtifactChunkSize           uint32
-	ArtifactMaxBufferSize       uint32
-	ArtifactQueueSize           int
-	ChallengeMaxBufferSize      uint32
-	ClusterID                   int
-	CommitmentMaxBufferSize     uint32
-	DisableAnalytics            bool
-	DisableBroadcast            bool
-	DisableNATPortMap           bool
-	DisablePeerDiscovery        bool
-	DisableStreamDiscovery      bool
-	IP                          string
-	KBucketSize                 int
-	LatencyTolerance            time.Duration
-	NATMonitorInterval          time.Duration
-	NATMonitorTimeout           time.Duration
-	Network                     string
-	PingBufferSize              uint32
-	Port                        uint16
-	ProcessID                   int
-	ProofMaxBufferSize          uint32
-	RandomSeed                  string
-	SampleMaxBufferSize         uint32
-	SampleSize                  int
-	SeedNodes                   []string
-	SpammerCacheSize            int
-	StreamstoreInboundCapacity  int
-	StreamstoreOutboundCapacity int
-	StreamstoreQueueSize        int
-	Timeout                     time.Duration
-	Version                     string
-	WitnessCacheSize            int
+	AnalyticsInterval       time.Duration
+	AnalyticsURL            string
+	AnalyticsUserData       string
+	ArtifactCacheSize       int
+	ArtifactChunkSize       uint32
+	ArtifactMaxBufferSize   uint32
+	ArtifactQueueSize       int
+	ChallengeMaxBufferSize  uint32
+	ClusterID               int
+	CommitmentMaxBufferSize uint32
+	DisableAnalytics        bool
+	DisableBroadcast        bool
+	DisableNATPortMap       bool
+	DisablePeerDiscovery    bool
+	DisableStreamDiscovery  bool
+	IP                      string
+	KBucketSize             int
+	LatencyTolerance        time.Duration
+	NATMonitorInterval      time.Duration
+	NATMonitorTimeout       time.Duration
+	Network                 string
+	PingBufferSize          uint32
+	Port                    uint16
+	ProcessID               int
+	ProofMaxBufferSize      uint32
+	RandomSeed              string
+	SampleMaxBufferSize     uint32
+	SampleSize              int
+	SeedNodes               []string
+	SpammerCacheSize        int
+	StreamstoreCapacity     int
+	StreamstoreQueueSize    int
+	Timeout                 time.Duration
+	Version                 string
+	WitnessCacheSize        int
 }
 
 // DefaultConfig -- Get the default configuration parameters.
@@ -77,27 +76,26 @@ func DefaultConfig() *Config {
 		DisableNATPortMap:       false,
 		DisablePeerDiscovery:    false,
 		DisableStreamDiscovery:  false,
-		IP:                          "0.0.0.0",
-		KBucketSize:                 16,
-		LatencyTolerance:            time.Minute,
-		NATMonitorInterval:          time.Second,
-		NATMonitorTimeout:           time.Minute,
-		Network:                     "revolver",
-		PingBufferSize:              32,
-		Port:                        0,
-		ProcessID:                   0,
-		ProofMaxBufferSize:          0,
-		RandomSeed:                  "",
-		SampleMaxBufferSize:         8192,
-		SampleSize:                  4,
-		SeedNodes:                   nil,
-		SpammerCacheSize:            16384,
-		StreamstoreInboundCapacity:  16,
-		StreamstoreOutboundCapacity: 48,
-		StreamstoreQueueSize:        8192,
-		Timeout:                     10 * time.Second,
-		Version:                     "0.1.0",
-		WitnessCacheSize:            65536,
+		IP:                   "0.0.0.0",
+		KBucketSize:          16,
+		LatencyTolerance:     time.Minute,
+		NATMonitorInterval:   time.Second,
+		NATMonitorTimeout:    time.Minute,
+		Network:              "revolver",
+		PingBufferSize:       32,
+		Port:                 0,
+		ProcessID:            0,
+		ProofMaxBufferSize:   0,
+		RandomSeed:           "",
+		SampleMaxBufferSize:  8192,
+		SampleSize:           4,
+		SeedNodes:            nil,
+		SpammerCacheSize:     16384,
+		StreamstoreCapacity:  8,
+		StreamstoreQueueSize: 8192,
+		Timeout:              10 * time.Second,
+		Version:              "0.1.0",
+		WitnessCacheSize:     65536,
 	}
 }
 
@@ -188,14 +186,9 @@ func (config *Config) validate() error {
 		}
 	}
 
-	// The stream store inbound capacity must be a positive integer.
-	if config.StreamstoreInboundCapacity <= 0 {
-		return fmt.Errorf("Invalid stream store inbound capacity: %d", config.StreamstoreInboundCapacity)
-	}
-
-	// The stream store outbound capacity must be a positive integer.
-	if config.StreamstoreOutboundCapacity <= 0 {
-		return fmt.Errorf("Invalid stream store outbound capacity: %d", config.StreamstoreOutboundCapacity)
+	// The stream store capacity must be a positive integer.
+	if config.StreamstoreCapacity <= 0 {
+		return fmt.Errorf("Invalid stream store capacity: %d", config.StreamstoreCapacity)
 	}
 
 	// The stream store transaction queue size must be a positive integer.
