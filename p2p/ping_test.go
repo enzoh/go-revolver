@@ -9,7 +9,9 @@
 package p2p
 
 import (
+	"math"
 	"testing"
+	"time"
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 )
@@ -36,6 +38,22 @@ func TestPing(test *testing.T) {
 	err := client1.ping(client2.id)
 	if err != nil {
 		test.Fatal(err)
+	}
+
+	// Verify the ping was recorded.
+	latency := client1.peerstore.LatencyEWMA(client2.id)
+	if latency < time.Nanosecond {
+		test.Fatalf("Invalid latency: %s", latency)
+	}
+	timestamp, err := client1.peerstore.Get(client2.id, "LAST_PING")
+	if err != nil {
+		test.Fatal(err)
+	}
+
+	// Verify the recording is fresh.
+	diration := math.Abs(float64(time.Since(timestamp.(time.Time)).Nanoseconds())) / 1000
+	if diration > 1000 {
+		test.Fatalf("Stale recording: %.0fμs", diration)
 	}
 
 }

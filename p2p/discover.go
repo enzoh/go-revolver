@@ -83,6 +83,12 @@ func (client *client) replenishRoutingTable(queries int) {
 					continue
 				}
 
+				// Prevent the client from repeatedly adding a peer.
+				timestamp, err := client.peerstore.Get(sample[j].ID, "LAST_PING")
+				if err == nil && time.Since(timestamp.(time.Time)) < 5 * time.Minute {
+					continue
+				}
+
 				// Temporarily add the peer to the peer store.
 				client.peerstore.AddAddrs(
 					sample[j].ID,
@@ -91,7 +97,7 @@ func (client *client) replenishRoutingTable(queries int) {
 				)
 
 				// Ping the peer.
-				err := client.ping(sample[j].ID)
+				err = client.ping(sample[j].ID)
 				if err != nil {
 					continue
 				}
