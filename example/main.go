@@ -16,9 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dfinity/go-logging"
 	"github.com/dfinity/go-revolver/artifact"
 	"github.com/dfinity/go-revolver/p2p"
-	"github.com/enzoh/go-logging"
 )
 
 func main() {

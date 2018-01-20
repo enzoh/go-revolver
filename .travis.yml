@@ -13,8 +13,8 @@ install:
 # Install Go packages ...
 - wget https://s3-us-west-2.amazonaws.com/gx-deps/gx.zip
 - unzip gx.zip -d $GOPATH/src
-- go get github.com/enzoh/go-logging
-- go get github.com/hashicorp/golang-lru
+- go get github.com/dfinity/go-logging
+- go get github.com/dfinity/go-lru
 - go get github.com/dfinity/go-revolver/artifact
 - go get github.com/dfinity/go-revolver/streamstore
 - go get github.com/dfinity/go-revolver/util

@@ -25,10 +25,10 @@ import (
 	"gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
 	"gx/ipfs/QmefgzMbKZYsmHFkLqxgaTBG9ypeEjrdWRD5WXH4j1cWDL/go-libp2p/p2p/host/basic"
 
+	"github.com/dfinity/go-logging"
+	"github.com/dfinity/go-lru"
 	"github.com/dfinity/go-revolver/artifact"
 	"github.com/dfinity/go-revolver/streamstore"
-	"github.com/enzoh/go-logging"
-	"github.com/hashicorp/golang-lru"
 )
 
 type Client interface {
