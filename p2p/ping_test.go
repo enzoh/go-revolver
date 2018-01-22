@@ -34,6 +34,9 @@ func TestPing(test *testing.T) {
 		peerstore.ProviderAddrTTL,
 	)
 
+	// Authorize the first client.
+	client2.peerstore.Put(client1.id, "AUTHORIZED", true)
+
 	// Ping the second client.
 	err := client1.ping(client2.id)
 	if err != nil {
@@ -45,7 +48,7 @@ func TestPing(test *testing.T) {
 	if latency < time.Nanosecond {
 		test.Fatalf("Invalid latency: %s", latency)
 	}
-	timestamp, err := client1.peerstore.Get(client2.id, "LAST_PING")
+	timestamp, err := client1.peerstore.Get(client2.id, "PINGED_AT")
 	if err != nil {
 		test.Fatal(err)
 	}

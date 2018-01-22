@@ -43,7 +43,7 @@ func (client *client) ping(peerId peer.ID) error {
 	defer stream.Close()
 
 	// Generate random data.
-	wbuf := make([]byte, client.config.PingBufferSize)
+	wbuf := make([]byte, 32)
 	_, err = rand.Reader.Read(wbuf)
 	if err != nil {
 		client.logger.Warning("Cannot generate random data", err)
@@ -61,11 +61,7 @@ func (client *client) ping(peerId peer.ID) error {
 	}
 
 	// Receive data from the target peer.
-	rbuf, err := util.ReadWithTimeout(
-		stream,
-		client.config.PingBufferSize,
-		client.config.Timeout,
-	)
+	rbuf, err := util.ReadWithTimeout(stream, 32, client.config.Timeout)
 	if err != nil {
 		client.logger.Warning("Cannot receive data from", pid, err)
 		return err
@@ -80,7 +76,7 @@ func (client *client) ping(peerId peer.ID) error {
 
 	// Record the observed latency.
 	client.peerstore.RecordLatency(pid, time.Since(before))
-	client.peerstore.Put(pid, "LAST_PING", time.Now())
+	client.peerstore.Put(pid, "PINGED_AT", time.Now())
 
 	// Success.
 	return nil
@@ -96,12 +92,15 @@ func (client *client) pingHandler(stream net.Stream) {
 	pid := stream.Conn().RemotePeer()
 	client.logger.Debug("Pong", pid)
 
+	// Check if the target peer is authorized to perform this action.
+	authorized, err := client.peerstore.Get(pid, "AUTHORIZED")
+	if err != nil || !authorized.(bool) {
+		client.logger.Warning("Unauthorized request from", pid)
+		return
+	}
+
 	// Receive data from the target peer.
-	rbuf, err := util.ReadWithTimeout(
-		stream,
-		client.config.PingBufferSize,
-		client.config.Timeout,
-	)
+	rbuf, err := util.ReadWithTimeout(stream, 32, client.config.Timeout)
 	if err != nil {
 		client.logger.Warning("Cannot receive data from", pid, err)
 		return
@@ -112,9 +111,6 @@ func (client *client) pingHandler(stream net.Stream) {
 	if err != nil {
 		client.logger.Warning("Cannot send data to", pid, err)
 	}
-
-	// Update the routing table.
-	client.table.Update(pid)
 
 }
 
