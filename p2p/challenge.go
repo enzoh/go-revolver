@@ -17,8 +17,7 @@ import (
 )
 
 // This type represents a function that executes when receiving a challenge
-// request. The function can be registered as a callback using
-// SetChallengeHandler.
+// request.
 type ChallengeHandler func(response chan []byte)
 
 // This type provides the data needed to request a challenge.
@@ -27,16 +26,12 @@ type challengeRequest struct {
 }
 
 // Register a challenge request handler.
-func (client *client) SetChallengeHandler(handler ChallengeHandler) {
+func (client *client) setChallengeHandler(handler ChallengeHandler) {
 
 	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetChallengeHandler()
 	client.unsetChallengeHandler = func() {
 		close(notify)
 	}
-	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -49,6 +44,11 @@ func (client *client) SetChallengeHandler(handler ChallengeHandler) {
 		}
 	}()
 
+}
+
+// Handle a challenge request.
+func DefaultChallengeHandler(response chan []byte) {
+	response <- nil
 }
 
 // Request a challenge.
@@ -75,7 +75,7 @@ func (client *client) sendChallenge(stream net.Stream, challenge []byte) error {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot send challenge to", pid, err)
+		client.logger.Debug("Cannot send challenge to", pid, err)
 		return err
 	}
 
@@ -92,14 +92,14 @@ func (client *client) receiveChallenge(stream net.Stream) ([]byte, error) {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot receive challenge size from", pid, err)
+		client.logger.Debug("Cannot receive challenge size from", pid, err)
 		return nil, err
 	}
 
 	if size > client.config.ChallengeMaxBufferSize {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debugf("cannot accept %d byte challenge from %v", size, pid)
-		return nil, errors.New("challenge exceeds maximum buffer size")
+		client.logger.Debugf("Cannot accept %d byte challenge from %v", size, pid)
+		return nil, errors.New("Challenge exceeds maximum buffer size")
 	}
 
 	challenge, err := util.ReadWithTimeout(
@@ -109,7 +109,7 @@ func (client *client) receiveChallenge(stream net.Stream) ([]byte, error) {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot receive challenge from", pid, err)
+		client.logger.Debug("Cannot receive challenge from", pid, err)
 		return nil, err
 	}
 

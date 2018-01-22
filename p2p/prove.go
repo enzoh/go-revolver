@@ -17,8 +17,7 @@ import (
 )
 
 // This type represents a function that executes when receiving a zero-knowledge
-// proof request. The function can be registered as a callback using
-// SetProofHandler.
+// proof request.
 type ProofHandler func(commitment []byte, challenge []byte, response chan []byte)
 
 // This type provides the data needed to request a zero-knowledge proof.
@@ -29,16 +28,12 @@ type proofRequest struct {
 }
 
 // Register a zero-knowledge proof request handler.
-func (client *client) SetProofHandler(handler ProofHandler) {
+func (client *client) setProofHandler(handler ProofHandler) {
 
 	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetProofHandler()
 	client.unsetProofHandler = func() {
 		close(notify)
 	}
-	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -51,6 +46,11 @@ func (client *client) SetProofHandler(handler ProofHandler) {
 		}
 	}()
 
+}
+
+// Handle a zero-knowledge proof request.
+func DefaultProofHandler(commitment, challenge []byte, response chan []byte) {
+	response <- nil
 }
 
 // Request a zero-knowledge proof.
@@ -81,7 +81,7 @@ func (client *client) sendProof(stream net.Stream, proof []byte) error {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot send zero-knowledge proof to", pid, err)
+		client.logger.Debug("Cannot send zero-knowledge proof to", pid, err)
 		return err
 	}
 
@@ -98,14 +98,14 @@ func (client *client) receiveProof(stream net.Stream) ([]byte, error) {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot receive zero-knowledge proof size from", pid, err)
+		client.logger.Debug("Cannot receive zero-knowledge proof size from", pid, err)
 		return nil, err
 	}
 
 	if size > client.config.ProofMaxBufferSize {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debugf("cannot accept %d byte zero-knowledge proof from %v", size, pid)
-		return nil, errors.New("zero-knowledge proof exceeds maximum buffer size")
+		client.logger.Debugf("Cannot accept %d byte zero-knowledge proof from %v", size, pid)
+		return nil, errors.New("Zero-knowledge proof exceeds maximum buffer size")
 	}
 
 	proof, err := util.ReadWithTimeout(
@@ -115,7 +115,7 @@ func (client *client) receiveProof(stream net.Stream) ([]byte, error) {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot receive zero-knowledge proof from", pid, err)
+		client.logger.Debug("Cannot receive zero-knowledge proof from", pid, err)
 		return nil, err
 	}
 

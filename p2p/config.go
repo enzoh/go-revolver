@@ -28,8 +28,10 @@ type Config struct {
 	ArtifactChunkSize       uint32
 	ArtifactMaxBufferSize   uint32
 	ArtifactQueueSize       int
+	ChallengeHandler        ChallengeHandler
 	ChallengeMaxBufferSize  uint32
 	ClusterID               int
+	CommitmentHandler       CommitmentHandler
 	CommitmentMaxBufferSize uint32
 	DisableAnalytics        bool
 	DisableBroadcast        bool
@@ -44,6 +46,7 @@ type Config struct {
 	Network                 string
 	Port                    uint16
 	ProcessID               int
+	ProofHandler            ProofHandler
 	ProofMaxBufferSize      uint32
 	RandomSeed              string
 	SampleMaxBufferSize     uint32
@@ -53,6 +56,7 @@ type Config struct {
 	StreamstoreCapacity     int
 	StreamstoreQueueSize    int
 	Timeout                 time.Duration
+	VerificationHandler     VerificationHandler
 	Version                 string
 	WitnessCacheSize        int
 }
@@ -67,8 +71,10 @@ func DefaultConfig() *Config {
 		ArtifactChunkSize:       65536,
 		ArtifactMaxBufferSize:   8388608,
 		ArtifactQueueSize:       8,
+		ChallengeHandler:        DefaultChallengeHandler,
 		ChallengeMaxBufferSize:  32,
 		ClusterID:               0,
+		CommitmentHandler:       DefaultCommitmentHandler,
 		CommitmentMaxBufferSize: 32,
 		DisableAnalytics:        false,
 		DisableBroadcast:        false,
@@ -83,6 +89,7 @@ func DefaultConfig() *Config {
 		Network:              "revolver",
 		Port:                 0,
 		ProcessID:            0,
+		ProofHandler:         DefaultProofHandler,
 		ProofMaxBufferSize:   32,
 		RandomSeed:           "",
 		SampleMaxBufferSize:  8192,
@@ -92,6 +99,7 @@ func DefaultConfig() *Config {
 		StreamstoreCapacity:  8,
 		StreamstoreQueueSize: 8192,
 		Timeout:              10 * time.Second,
+		VerificationHandler:  DefaultVerificationHandler,
 		Version:              "0.1.0",
 		WitnessCacheSize:     65536,
 	}

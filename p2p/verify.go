@@ -9,8 +9,7 @@
 package p2p
 
 // This type represents a function that executes when receiving a verification
-// request. The function can be registered as a callback using 
-// SetVerificationHandler.
+// request.
 type VerificationHandler func(commitment []byte, challenge []byte, proof []byte, response chan bool)
 
 // This type provides the data needed to request a verification.
@@ -22,16 +21,12 @@ type verificationRequest struct {
 }
 
 // Register a verification request handler.
-func (client *client) SetVerificationHandler(handler VerificationHandler) {
+func (client *client) setVerificationHandler(handler VerificationHandler) {
 
 	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetVerificationHandler()
 	client.unsetVerificationHandler = func() {
 		close(notify)
 	}
-	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -44,6 +39,11 @@ func (client *client) SetVerificationHandler(handler VerificationHandler) {
 		}
 	}()
 
+}
+
+// Handle a verification request.
+func DefaultVerificationHandler(commitment, challenge, proof []byte, response chan bool) {
+	response <- true
 }
 
 // Request a verification.

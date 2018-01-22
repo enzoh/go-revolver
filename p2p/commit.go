@@ -17,8 +17,7 @@ import (
 )
 
 // This type represents a function that executes when receiving a commitment
-// request. The function can be registered as a callback using
-// SetCommitmentHandler.
+// request.
 type CommitmentHandler func(response chan []byte)
 
 // This type provides the data needed to request a commitment.
@@ -27,16 +26,12 @@ type commitmentRequest struct {
 }
 
 // Register a commitment request handler.
-func (client *client) SetCommitmentHandler(handler CommitmentHandler) {
+func (client *client) setCommitmentHandler(handler CommitmentHandler) {
 
 	notify := make(chan struct{})
-
-	client.unsetHandlerLock.Lock()
-	client.unsetCommitmentHandler()
 	client.unsetCommitmentHandler = func() {
 		close(notify)
 	}
-	client.unsetHandlerLock.Unlock()
 
 	go func() {
 		for {
@@ -49,6 +44,11 @@ func (client *client) SetCommitmentHandler(handler CommitmentHandler) {
 		}
 	}()
 
+}
+
+// Handle a commitment request.
+func DefaultCommitmentHandler(response chan []byte) {
+	response <- nil
 }
 
 // Request a commitment.
@@ -75,7 +75,7 @@ func (client *client) sendCommitment(stream net.Stream, commitment []byte) error
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot send commitment to", pid, err)
+		client.logger.Debug("Cannot send commitment to", pid, err)
 		return err
 	}
 
@@ -92,14 +92,14 @@ func (client *client) receiveCommitment(stream net.Stream) ([]byte, error) {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot receive commitment size from", pid, err)
+		client.logger.Debug("Cannot receive commitment size from", pid, err)
 		return nil, err
 	}
 
 	if size > client.config.CommitmentMaxBufferSize {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debugf("cannot accept %d byte commitment from %v", size, pid)
-		return nil, errors.New("commitment exceeds maximum buffer size")
+		client.logger.Debugf("Cannot accept %d byte commitment from %v", size, pid)
+		return nil, errors.New("Commitment exceeds maximum buffer size")
 	}
 
 	commitment, err := util.ReadWithTimeout(
@@ -109,7 +109,7 @@ func (client *client) receiveCommitment(stream net.Stream) ([]byte, error) {
 	)
 	if err != nil {
 		pid := stream.Conn().RemotePeer()
-		client.logger.Debug("cannot receive commitment from", pid, err)
+		client.logger.Debug("Cannot receive commitment from", pid, err)
 		return nil, err
 	}
 
