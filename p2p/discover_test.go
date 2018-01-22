@@ -13,13 +13,13 @@ import (
 	"time"
 )
 
-const test_N = 32
+const discover_test_N = 24
 
 // Show that clients can discover each other.
-func TestDiscovery(test *testing.T) {
+func TestDiscover(test *testing.T) {
 
-	setup := make(chan []string, test_N)
-	ready := make(chan struct{}, test_N)
+	setup := make(chan []string, discover_test_N)
+	ready := make(chan struct{}, discover_test_N)
 
 	config := DefaultConfig()
 	config.DisableAnalytics = true
@@ -28,7 +28,7 @@ func TestDiscovery(test *testing.T) {
 	config.DisableStreamDiscovery = true
 	config.IP = "127.0.0.1"
 
-	go newDiscoveryClient(config, setup, ready)
+	go newDiscoverClient(config, setup, ready)
 
 	var addresses []string
 	select {
@@ -38,14 +38,14 @@ func TestDiscovery(test *testing.T) {
 	}
 	config.SeedNodes = addresses
 
-	for i := 1; i < test_N; i++ {
-		go newDiscoveryClient(config, setup, ready)
+	for i := 1; i < discover_test_N; i++ {
+		go newDiscoverClient(config, setup, ready)
 	}
 
 	done := make(chan struct{}, 1)
 
 	go func() {
-		for i := 0; i < test_N; i++ {
+		for i := 0; i < discover_test_N; i++ {
 			<-ready
 		}
 		done <- struct{}{}
@@ -59,7 +59,7 @@ func TestDiscovery(test *testing.T) {
 
 }
 
-func newDiscoveryClient(config *Config, setup chan []string, ready chan struct{}) {
+func newDiscoverClient(config *Config, setup chan []string, ready chan struct{}) {
 
 	client, shutdown, err := config.create()
 	if err != nil {
@@ -76,7 +76,7 @@ func newDiscoveryClient(config *Config, setup chan []string, ready chan struct{}
 	setup <- addresses
 
 	for {
-		if float64(client.PeerCount()) >= float64(test_N) * 0.75 {
+		if float64(client.PeerCount()) >= float64(discover_test_N)*0.75 {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
