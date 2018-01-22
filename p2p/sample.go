@@ -10,7 +10,6 @@ package p2p
 
 import (
 	"encoding/json"
-	"math/rand"
 
 	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
@@ -90,20 +89,15 @@ func (client *client) sampleHandler(stream net.Stream) {
 	pid := stream.Conn().RemotePeer()
 	client.logger.Debug("Receiving request for peers from", pid)
 
-	// Select peers from the routing table.
-	peers := client.table.ListPeers()
-	var sample []peerstore.PeerInfo
-	for len(peers) > 0 {
-		if client.config.SampleSize <= len(sample) {
-			break
-		}
-		j := rand.Intn(len(peers))
-		info := client.peerstore.PeerInfo(peers[j])
-		if info.ID != client.id && info.ID != pid && len(info.Addrs) != 0 {
-			sample = append(sample, info)
-		}
-		peers = append(peers[:j], peers[j+1:]...)
+	// Check if the target peer is authorized to perform this action.
+	authorized, err := client.peerstore.Get(pid, "AUTHORIZED")
+	if err != nil || !authorized.(bool) {
+		client.logger.Warning("Unauthorized request from", pid)
+		return
 	}
+
+	// Select peers from the routing table.
+	sample := client.table.Sample(client.config.SampleSize, []peer.ID{pid})
 
 	// Encode the peer list.
 	data, err := json.Marshal(sample)
@@ -123,9 +117,6 @@ func (client *client) sampleHandler(stream net.Stream) {
 	if err != nil {
 		client.logger.Warning("Cannot send peers to", pid, err)
 	}
-
-	// Update the routing table.
-	client.table.Update(pid)
 
 }
 

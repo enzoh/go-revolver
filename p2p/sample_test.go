@@ -44,8 +44,11 @@ func TestSample(test *testing.T) {
 		peerstore.ProviderAddrTTL,
 	)
 
+	// Authorize the first client.
+	client2.peerstore.Put(client1.id, "AUTHORIZED", true)
+
 	// Add the third client to the routing table of the second.
-	client2.table.Update(client3.id)
+	client2.table.Add(client3.id)
 
 	// Request peers from the second client.
 	sample, err := client1.sample(client2.id)
