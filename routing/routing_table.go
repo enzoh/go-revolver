@@ -185,7 +185,7 @@ func (table *kadlike) Sample(n int, exclude []peer.ID) (sample []peerstore.PeerI
 
 		if !exists {
 			info := table.peerstore.PeerInfo(peers[j])
-			if info.ID != table.local && len(info.Addrs) != 0 {
+			if len(info.Addrs) != 0 {
 				sample = append(sample, info)
 			}
 		}
@@ -195,7 +195,6 @@ func (table *kadlike) Sample(n int, exclude []peer.ID) (sample []peerstore.PeerI
 	}
 
 	return
-
 
 }
 
