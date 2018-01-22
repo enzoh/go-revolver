@@ -70,7 +70,8 @@ func (r *ring) Remove(pid peer.ID) {
 	}
 }
 
-// Return `count` random peers in the ring, except for those in the `exclude` list.
+// Return `count` random peers in the ring, except for those in the `exclude`
+// list.
 func (r *ring) Recommend(count int, exclude map[peer.ID]bool) []peer.ID {
 	var recommended []peer.ID
 
@@ -140,12 +141,18 @@ func NewRingsRoutingTable(conf RingsConfig) RoutingTable {
 // refreshLatency picks a random subset of peers and refresh their latency
 // information.  The rings are then re-populated.
 func (r *ringsRoutingTable) refreshLatency() {
-	// Get a list of all peers
 	var pids []peer.ID
-	for pid := range r.peers {
-		pids = append(pids, pid)
-	}
-	peerCount := len(pids)
+	var peerCount int
+	func() {
+		r.RLock()
+		defer r.RUnlock()
+
+		// Get a list of all peers
+		for pid := range r.peers {
+			pids = append(pids, pid)
+		}
+		peerCount = len(pids)
+	}()
 
 	// Get a random sample of the peers
 	var sample []peer.ID
@@ -183,7 +190,8 @@ func (r *ringsRoutingTable) populateRings() {
 		// Find the ring that the peer belongs to
 		for i := len(r.latRanges) - 1; i >= 0; i-- {
 			if latency > r.latRanges[i] {
-				r.rings[i].Add(pid)
+				rings[i].Add(pid)
+				break
 			}
 		}
 	}
