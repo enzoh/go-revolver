@@ -191,19 +191,46 @@ func (client *client) hello(seedAddress multiaddr.Multiaddr) error {
 		return nil
 	}
 
-	// Ping the seed node.
+	// Authenticate with the seed node.
+	var success bool
 	for i := 0; i < 5; i++ {
+
 		client.peerstore.AddAddr(
 			seedId,
 			seedAddr,
 			peerstore.TempAddrTTL,
 		)
-		err = client.ping(seedId)
+
+		success, err = client.auth(seedId)
 		if err != nil {
 			time.Sleep(time.Second)
 			continue
 		}
+
+		if !success {
+			break
+		}
+
+		for j := 0; j < 5; j++ {
+
+			client.peerstore.AddAddr(
+				seedId,
+				seedAddr,
+				peerstore.TempAddrTTL,
+			)
+
+			err = client.ping(seedId)
+			if err != nil {
+				time.Sleep(time.Second)
+				continue
+			}
+
+			break
+
+		}
+
 		break
+
 	}
 	if err != nil {
 		return err
@@ -215,9 +242,6 @@ func (client *client) hello(seedAddress multiaddr.Multiaddr) error {
 		seedAddr,
 		peerstore.PermanentAddrTTL,
 	)
-
-	// Update the routing table.
-	client.table.Update(seedId)
 
 	// Success.
 	return nil
