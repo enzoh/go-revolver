@@ -19,7 +19,7 @@ import (
 	"gx/ipfs/QmXY77cVe7rVRQXZZQRioukUM7aRW3BTcAgJe12MCtb3Ji/go-multiaddr"
 )
 
-// Config -- This type provides all available options to configure a client.
+// This type provides all available options to configure a client.
 type Config struct {
 	AnalyticsInterval       time.Duration
 	AnalyticsURL            string
@@ -42,7 +42,6 @@ type Config struct {
 	NATMonitorInterval      time.Duration
 	NATMonitorTimeout       time.Duration
 	Network                 string
-	PingBufferSize          uint32
 	Port                    uint16
 	ProcessID               int
 	ProofMaxBufferSize      uint32
@@ -58,7 +57,7 @@ type Config struct {
 	WitnessCacheSize        int
 }
 
-// DefaultConfig -- Get the default configuration parameters.
+// Get the default configuration parameters.
 func DefaultConfig() *Config {
 	return &Config{
 		AnalyticsInterval:       time.Minute,
@@ -82,10 +81,9 @@ func DefaultConfig() *Config {
 		NATMonitorInterval:   time.Second,
 		NATMonitorTimeout:    time.Minute,
 		Network:              "revolver",
-		PingBufferSize:       32,
 		Port:                 0,
 		ProcessID:            0,
-		ProofMaxBufferSize:   0,
+		ProofMaxBufferSize:   32,
 		RandomSeed:           "",
 		SampleMaxBufferSize:  8192,
 		SampleSize:           4,
@@ -155,11 +153,6 @@ func (config *Config) validate() error {
 	// The NAT monitor timeout must be a positive time duration.
 	if config.NATMonitorTimeout <= 0 {
 		return fmt.Errorf("Invalid NAT monitor timeout: %d", config.NATMonitorTimeout)
-	}
-
-	// The ping buffer size must be a non-zero unsigned 32-bit integer.
-	if config.PingBufferSize == 0 {
-		return errors.New("Invalid ping buffer size: 0")
 	}
 
 	// The random seed must be a zero or 32-byte hex-encoded string.
