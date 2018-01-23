@@ -24,7 +24,7 @@ import (
 	"gx/ipfs/QmdQFrFnPrKRQtpeHKjZ3cVNwxmGKKS2TvhJTuN9C9yduh/go-libp2p-swarm"
 	"gx/ipfs/QmefgzMbKZYsmHFkLqxgaTBG9ypeEjrdWRD5WXH4j1cWDL/go-libp2p/p2p/host/basic"
 
-	"github.com/enzoh/go-logging"
+	"github.com/dfinity/go-logging"
 )
 
 const QUEUE_SIZE = 10

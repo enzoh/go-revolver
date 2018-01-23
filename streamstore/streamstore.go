@@ -17,7 +17,7 @@ import (
 	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
 	"gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 
-	"github.com/enzoh/go-logging"
+	"github.com/dfinity/go-logging"
 )
 
 // A thread-safe collection of peer-stream pairs.
