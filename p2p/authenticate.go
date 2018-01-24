@@ -102,17 +102,6 @@ func (client *client) authHandler(stream net.Stream) {
 	pid := stream.Conn().RemotePeer()
 	client.logger.Debug("Authenticating with", pid)
 
-	// Check if the request is spam.
-	client.spammerCacheLock.Lock()
-	timestamp, exists := client.spammerCache.Get(pid)
-	if exists && time.Since(timestamp.(time.Time)) < 10*time.Minute {
-		client.spammerCacheLock.Unlock()
-		time.Sleep(time.Second)
-		return
-	}
-	client.spammerCache.Add(pid, time.Now)
-	client.spammerCacheLock.Unlock()
-
 	// Receive a commitment.
 	commitmentIn, err := client.receiveCommitment(stream)
 	if err != nil {
