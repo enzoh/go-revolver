@@ -13,7 +13,7 @@ import (
 )
 
 // Create a test client.
-func newTestClient(test *testing.T) *client{
+func newTestClient(test *testing.T) *client {
 
 	// Create a configuration.
 	config := DefaultConfig()

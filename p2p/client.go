@@ -31,7 +31,6 @@ import (
 )
 
 type Client interface {
-
 	io.Closer
 
 	// List the addresses.
