@@ -13,6 +13,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/dfinity/go-revolver/analytics"
 )
 
 // Share analytics with core developers.
@@ -26,19 +28,6 @@ func (client *client) activateAnalytics() func() {
 
 	go func() {
 
-		type Report struct {
-			Addrs     []string
-			ClusterID int
-			Network   string
-			NodeID    string
-			Peers     int
-			ProcessID int
-			Streams   []string
-			Timestamp int64
-			UserData  string
-			Version   string
-		}
-
 		for {
 
 			// Check for a shutdown instruction.
@@ -49,7 +38,7 @@ func (client *client) activateAnalytics() func() {
 			}
 
 			// Create a report.
-			report := Report{
+			report := analytics.Report{
 				ClusterID: client.config.ClusterID,
 				Network:   string(client.config.Network),
 				NodeID:    client.id.Pretty(),
