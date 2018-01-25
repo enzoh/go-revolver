@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"io"
 	"sync"
 
 	"gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
@@ -30,6 +31,8 @@ import (
 )
 
 type Client interface {
+
+	io.Closer
 
 	// List the addresses.
 	Addresses() []string
@@ -57,6 +60,7 @@ type client struct {
 	artifactCache            *lru.Cache
 	artifactCacheLock        *sync.Mutex
 	challengeRequests        chan challengeRequest
+	closer                   func()
 	commitmentRequests       chan commitmentRequest
 	config                   *Config
 	context                  context.Context
@@ -116,23 +120,69 @@ func (client *client) Receive() artifact.Artifact {
 	return <-client.receive
 }
 
+// Close a client. This will release all resources associated with the client.
+// Do not use the client after calling this function.
+func (client *client) Close() error {
+	client.closer()
+	return nil
+}
+
 // Create a client.
-func (config *Config) New() (Client, func(), error) {
+func (config *Config) New() (Client, error) {
 	return config.create()
 }
 
-func (config *Config) create() (*client, func(), error) {
+func (config *Config) create() (*client, error) {
 
 	// Check if the configuration contains any invalid parameters.
 	err := config.validate()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Copy the configuration to a new client.
 	client := &client{}
 	client.config = &Config{}
 	*client.config = *config
+
+	// Create an artifact cache.
+	client.artifactCache, err = lru.New(client.config.ArtifactCacheSize)
+	if err != nil {
+		return nil, err
+	}
+	client.artifactCacheLock = &sync.Mutex{}
+
+	// Create a witness cache.
+	client.witnessCache, err = lru.New(client.config.WitnessCacheSize)
+	if err != nil {
+		return nil, err
+	}
+	client.witnessCacheLock = &sync.Mutex{}
+
+	// Create a random seed.
+	seed := make([]byte, 32)
+	if len(client.config.RandomSeed) == 0 {
+		_, err = rand.Read(seed)
+	} else {
+		seed, err = hex.DecodeString(client.config.RandomSeed)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Create an Ed25519 key pair from the random seed.
+	secretKey, publicKey, err := crypto.GenerateEd25519Key(
+		bytes.NewReader(seed),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create an identity from the public key.
+	client.id, err = peer.IDFromPublicKey(publicKey)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a context.
 	client.context = context.Background()
@@ -144,31 +194,6 @@ func (config *Config) create() (*client, func(), error) {
 	client.protocol = protocol.ID(
 		"/" + client.config.Network + "/" + client.config.Version,
 	)
-
-	// Create a random seed.
-	seed := make([]byte, 32)
-	if len(client.config.RandomSeed) == 0 {
-		_, err = rand.Read(seed)
-	} else {
-		seed, err = hex.DecodeString(client.config.RandomSeed)
-	}
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Create an Ed25519 key pair from the random seed.
-	secretKey, publicKey, err := crypto.GenerateEd25519Key(
-		bytes.NewReader(seed),
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Create an identity from the public key.
-	client.id, err = peer.IDFromPublicKey(publicKey)
-	if err != nil {
-		return nil, nil, err
-	}
 
 	// Create a peer store.
 	client.peerstore = peerstore.NewPeerstore()
@@ -202,6 +227,14 @@ func (config *Config) create() (*client, func(), error) {
 	client.setProofHandler(client.config.ProofHandler)
 	client.setVerificationHandler(client.config.VerificationHandler)
 
+	// Prepare to unregister the authentication request handlers.
+	unsetAuthHandlers := func() {
+		client.unsetCommitmentHandler()
+		client.unsetChallengeHandler()
+		client.unsetProofHandler()
+		client.unsetVerificationHandler()
+	}
+
 	// Create the artifact queues.
 	client.send = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
 	client.receive = make(chan artifact.Artifact, client.config.ArtifactQueueSize)
@@ -212,34 +245,22 @@ func (config *Config) create() (*client, func(), error) {
 	// Register the artifact sync request handler.
 	client.setSyncHandler(client.config.SyncHandler)
 
-	// Create an artifact cache.
-	client.artifactCache, err = lru.New(client.config.ArtifactCacheSize)
-	if err != nil {
-		return nil, nil, err
-	}
-	client.artifactCacheLock = &sync.Mutex{}
-
-	// Create a witness cache.
-	client.witnessCache, err = lru.New(client.config.WitnessCacheSize)
-	if err != nil {
-		return nil, nil, err
-	}
-	client.witnessCacheLock = &sync.Mutex{}
-
 	// Start the client.
 	shutdown, err := client.bootstrap()
 	if err != nil {
-		return nil, nil, err
+		unsetAuthHandlers()
+		client.unsetSyncHandler()
+		return nil, err
+	}
+
+	// Prepare to stop the client.
+	client.closer = func() {
+		shutdown()
+		unsetAuthHandlers()
+		client.unsetSyncHandler()
 	}
 
 	// Ready for action!
-	return client, func() {
-		shutdown()
-		client.unsetCommitmentHandler()
-		client.unsetChallengeHandler()
-		client.unsetProofHandler()
-		client.unsetSyncHandler()
-		client.unsetVerificationHandler()
-	}, nil
+	return client, nil
 
 }
