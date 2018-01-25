@@ -23,12 +23,12 @@ import (
 func TestBroadcast(test *testing.T) {
 
 	// Create a client.
-	client1, shutdown1 := newTestClient(test)
-	defer shutdown1()
+	client1 := newTestClient(test)
+	defer client1.Close()
 
 	// Create a second client.
-	client2, shutdown2 := newTestClient(test)
-	defer shutdown2()
+	client2 := newTestClient(test)
+	defer client2.Close()
 
 	// Add the second client to the peer store of the first.
 	client1.peerstore.AddAddrs(
@@ -38,7 +38,7 @@ func TestBroadcast(test *testing.T) {
 	)
 
 	// Add the second client to the routing table of the first.
-	client2.table.Update(client1.id)
+	client2.table.Add(client1.id)
 
 	// Pair the first and second client.
 	success, err := client1.pair(client2.id)

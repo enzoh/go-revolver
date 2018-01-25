@@ -19,16 +19,16 @@ import (
 func TestSample(test *testing.T) {
 
 	// Create a client.
-	client1, shutdown1 := newTestClient(test)
-	defer shutdown1()
+	client1 := newTestClient(test)
+	defer client1.Close()
 
 	// Create a second client.
-	client2, shutdown2 := newTestClient(test)
-	defer shutdown2()
+	client2 := newTestClient(test)
+	defer client2.Close()
 
 	// Create a third client.
-	client3, shutdown3 := newTestClient(test)
-	defer shutdown3()
+	client3 := newTestClient(test)
+	defer client3.Close()
 
 	// Add the second client to the peer store of the first.
 	client1.peerstore.AddAddrs(

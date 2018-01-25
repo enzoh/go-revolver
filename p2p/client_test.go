@@ -13,7 +13,7 @@ import (
 )
 
 // Create a test client.
-func newTestClient(test *testing.T) (*client, func()) {
+func newTestClient(test *testing.T) *client{
 
 	// Create a configuration.
 	config := DefaultConfig()
@@ -24,12 +24,12 @@ func newTestClient(test *testing.T) (*client, func()) {
 	config.IP = "127.0.0.1"
 
 	// Create a client.
-	client, shutdown, err := config.create()
+	client, err := config.create()
 	if err != nil {
 		test.Fatal(err)
 	}
 
-	// Ready for tests.
-	return client, shutdown
+	// Ready for testing.
+	return client
 
 }

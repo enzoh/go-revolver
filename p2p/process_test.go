@@ -25,20 +25,20 @@ func TestDuplication(test *testing.T) {
 	const N = 1024
 
 	// Create a client.
-	client1, shutdown1 := newTestClient(test)
-	defer shutdown1()
+	client1 := newTestClient(test)
+	defer client1.Close()
 
 	// Create a second client.
-	client2, shutdown2 := newTestClient(test)
-	defer shutdown2()
+	client2 := newTestClient(test)
+	defer client2.Close()
 
 	// Create a third client.
-	client3, shutdown3 := newTestClient(test)
-	defer shutdown3()
+	client3 := newTestClient(test)
+	defer client3.Close()
 
 	// Create a fourth client.
-	client4, shutdown4 := newTestClient(test)
-	defer shutdown4()
+	client4 := newTestClient(test)
+	defer client4.Close()
 
 	// Add the second client to the peer store of the first.
 	client1.peerstore.AddAddrs(
@@ -69,10 +69,10 @@ func TestDuplication(test *testing.T) {
 	)
 
 	// Update the routing table of each client.
-	client1.table.Update(client4.id)
-	client2.table.Update(client1.id)
-	client3.table.Update(client2.id)
-	client4.table.Update(client3.id)
+	client1.table.Add(client4.id)
+	client2.table.Add(client1.id)
+	client3.table.Add(client2.id)
+	client4.table.Add(client3.id)
 
 	// Pair the first and second client.
 	success1, err := client1.pair(client2.id)

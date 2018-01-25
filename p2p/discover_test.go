@@ -61,12 +61,12 @@ func TestDiscover(test *testing.T) {
 
 func newDiscoverClient(config *Config, setup chan []string, ready chan struct{}) {
 
-	client, shutdown, err := config.create()
+	client, err := config.create()
 	if err != nil {
 		client.logger.Error(err)
 		return
 	}
-	defer shutdown()
+	defer client.Close()
 
 	var addresses []string
 	for _, addr := range client.Addresses() {
