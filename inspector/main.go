@@ -16,20 +16,9 @@ import (
 	"net/http"
 	"sync"
 	"time"
-)
 
-type Report struct {
-	Addrs     []string
-	ClusterID int
-	Network   string
-	NodeID    string
-	Peers     int
-	ProcessID int
-	Streams   []string
-	Timestamp int64
-	UserData  string
-	Version   string
-}
+	"github.com/dfinity/go-revolver/analytics"
+)
 
 func main() {
 
@@ -38,13 +27,13 @@ func main() {
 	ttl := flag.Duration("ttl", 90*time.Second, "Time until analytics reports are discarded.")
 	flag.Parse()
 
-	reports := make(map[string]Report)
+	reports := make(map[string]analytics.Report)
 	lock := &sync.Mutex{}
 
 	log.Println("Registering request handlers ...")
 	http.HandleFunc("/", index())
 	http.HandleFunc("/graph", graph(reports, lock, *ttl))
-	http.HandleFunc("/report", report(reports, lock))
+	http.HandleFunc("/report", analytics.ReportHandler(reports, lock))
 
 	log.Printf("Listening on port %d ...\n", *port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
@@ -64,7 +53,7 @@ func index() http.HandlerFunc {
 }
 
 // Serve the graph data.
-func graph(reports map[string]Report, lock *sync.Mutex, ttl time.Duration) http.HandlerFunc {
+func graph(reports map[string]analytics.Report, lock *sync.Mutex, ttl time.Duration) http.HandlerFunc {
 
 	return func(resp http.ResponseWriter, req *http.Request) {
 
@@ -120,34 +109,6 @@ func graph(reports map[string]Report, lock *sync.Mutex, ttl time.Duration) http.
 		header.Set("Content-Type", "application/json")
 
 		resp.Write(data)
-
-	}
-
-}
-
-// Report analytics.
-func report(reports map[string]Report, lock *sync.Mutex) http.HandlerFunc {
-
-	return func(resp http.ResponseWriter, req *http.Request) {
-
-		log.Println("Receiving analytics report ...")
-
-		lock.Lock()
-		defer lock.Unlock()
-
-		decoder := json.NewDecoder(req.Body)
-		defer req.Body.Close()
-
-		var report Report
-		err := decoder.Decode(&report)
-		if err != nil {
-			log.Printf("Cannot decode report: \033[1;31m%s\033[0m\n", err.Error())
-			http.Error(resp, "400 Bad Request", http.StatusBadRequest)
-			return
-		}
-
-		report.Timestamp = time.Now().Unix()
-		reports[report.NodeID] = report
 
 	}
 
