@@ -24,7 +24,7 @@ import (
 func TestAnalytics(test *testing.T) {
 
 	// Create a simple key-value store for analytics reports.
-	reports := make(map[string]analytics.Report)
+	reports := make(map[string]*analytics.Report)
 	lock := &sync.Mutex{}
 
 	// Create a TCP listener to be used by the analytics server.
@@ -35,7 +35,7 @@ func TestAnalytics(test *testing.T) {
 	defer listener.Close()
 
 	// Start the analytics server on a separate thread.
-	go func(reports map[string]analytics.Report, lock *sync.Mutex, listener net.Listener) {
+	go func(reports map[string]*analytics.Report, lock *sync.Mutex, listener net.Listener) {
 		http.HandleFunc("/report", analytics.ReportHandler(reports, lock))
 		http.Serve(listener, nil)
 	}(reports, lock, listener)
@@ -74,7 +74,7 @@ func TestAnalytics(test *testing.T) {
 	}
 
 	// Send an analytics report.
-	err = client1.sendReport()
+	err = client1.genReport().Send(client1.config.AnalyticsURL)
 	if err != nil {
 		test.Fatal(err)
 	}

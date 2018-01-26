@@ -9,9 +9,6 @@
 package p2p
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
 	"time"
 
 	"github.com/dfinity/go-revolver/analytics"
@@ -38,7 +35,7 @@ func (client *client) activateAnalytics() func() {
 			}
 
 			// Send an analytics report.
-			err := client.sendReport()
+			err := client.genReport().Send(client.config.AnalyticsURL)
 			if err != nil {
 				client.logger.Warning("Cannot send analytics report", err)
 			}
@@ -55,8 +52,8 @@ func (client *client) activateAnalytics() func() {
 
 }
 
-// Send an analytics report.
-func (client *client) sendReport() error {
+// Generate an analytics report.
+func (client *client) genReport() *analytics.Report {
 
 	// Create a report.
 	report := analytics.Report{
@@ -69,39 +66,18 @@ func (client *client) sendReport() error {
 		UserData:  client.config.AnalyticsUserData,
 		Version:   string(client.config.Version),
 	}
+
+	// Add the addresses.
 	for _, addr := range client.host.Addrs() {
 		report.Addrs = append(report.Addrs, addr.String())
 	}
+
+	// Add the streams.
 	for _, stream := range client.streamstore.Peers() {
 		report.Streams = append(report.Streams, stream.Pretty())
 	}
 
-	// Encode it.
-	data, err := json.Marshal(&report)
-	if err != nil {
-		return err
-	}
-
-	// Create a request.
-	req, err := http.NewRequest(
-		"POST",
-		client.config.AnalyticsURL,
-		bytes.NewBuffer(data),
-	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send it.
-	sender := &http.Client{}
-	resp, err := sender.Do(req)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
 	// Done.
-	return nil
+	return &report
 
 }

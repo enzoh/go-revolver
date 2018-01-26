@@ -5,15 +5,15 @@
  * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Stable
  *
- * This module provides a common type used by both the client and the network
- * topology inspector.
+ * This module provides common types and functions used by both the client and
+ * the network topology inspector.
  */
 
 package analytics
 
 import (
+	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -32,12 +32,39 @@ type Report struct {
 	Version   string
 }
 
-// Handle an analytics report.
-func ReportHandler(reports map[string]Report, lock *sync.Mutex) http.HandlerFunc {
+// Send a report to an analytics server.
+func (report *Report) Send(url string) error {
+
+	// Encode the report.
+	data, err := json.Marshal(report)
+	if err != nil {
+		return err
+	}
+
+	// Create a request.
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send it.
+	sender := &http.Client{}
+	resp, err := sender.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+
+	// Done.
+	return nil
+
+}
+
+// Process an analytics report.
+func ReportHandler(reports map[string]*Report, lock *sync.Mutex) http.HandlerFunc {
 
 	return func(resp http.ResponseWriter, req *http.Request) {
-
-		log.Println("Receiving analytics report ...")
 
 		lock.Lock()
 		defer lock.Unlock()
@@ -48,13 +75,12 @@ func ReportHandler(reports map[string]Report, lock *sync.Mutex) http.HandlerFunc
 		var report Report
 		err := decoder.Decode(&report)
 		if err != nil {
-			log.Printf("Cannot decode report: \033[1;31m%s\033[0m\n", err.Error())
 			http.Error(resp, "400 Bad Request", http.StatusBadRequest)
 			return
 		}
 
 		report.Timestamp = time.Now().Unix()
-		reports[report.NodeID] = report
+		reports[report.NodeID] = &report
 
 	}
 
