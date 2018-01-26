@@ -21,44 +21,45 @@ import (
 
 // This type provides all available options to configure a client.
 type Config struct {
-	AnalyticsInterval       time.Duration
-	AnalyticsURL            string
-	AnalyticsUserData       string
-	ArtifactCacheSize       int
-	ArtifactChunkSize       uint32
-	ArtifactMaxBufferSize   uint32
-	ArtifactQueueSize       int
-	ChallengeHandler        ChallengeHandler
-	ChallengeMaxBufferSize  uint32
-	ClusterID               int
-	CommitmentHandler       CommitmentHandler
-	CommitmentMaxBufferSize uint32
-	DisableAnalytics        bool
-	DisableBroadcast        bool
-	DisableNATPortMap       bool
-	DisablePeerDiscovery    bool
-	DisableStreamDiscovery  bool
-	IP                      string
-	KBucketSize             int
-	LatencyTolerance        time.Duration
-	NATMonitorInterval      time.Duration
-	NATMonitorTimeout       time.Duration
-	Network                 string
-	Port                    uint16
-	ProcessID               int
-	ProofHandler            ProofHandler
-	ProofMaxBufferSize      uint32
-	RandomSeed              string
-	SampleMaxBufferSize     uint32
-	SampleSize              int
-	SeedNodes               []string
-	SpammerCacheSize        int
-	StreamstoreCapacity     int
-	StreamstoreQueueSize    int
-	Timeout                 time.Duration
-	VerificationHandler     VerificationHandler
-	Version                 string
-	WitnessCacheSize        int
+	AnalyticsInterval        time.Duration
+	AnalyticsURL             string
+	AnalyticsUserData        string
+	ArtifactCacheSize        int
+	ArtifactChunkSize        uint32
+	ArtifactMaxBufferSize    uint32
+	ArtifactQueueSize        int
+	ChallengeHandler         ChallengeHandler
+	ChallengeMaxBufferSize   uint32
+	ClusterID                int
+	CommitmentHandler        CommitmentHandler
+	CommitmentMaxBufferSize  uint32
+	DisableAnalytics         bool
+	DisableBroadcast         bool
+	DisableNATPortMap        bool
+	DisablePeerDiscovery     bool
+	DisableStreamDiscovery   bool
+	IP                       string
+	KBucketSize              int
+	LatencyTolerance         time.Duration
+	NATMonitorInterval       time.Duration
+	NATMonitorTimeout        time.Duration
+	Network                  string
+	Port                     uint16
+	ProcessID                int
+	ProofHandler             ProofHandler
+	ProofMaxBufferSize       uint32
+	RandomSeed               string
+	SampleMaxBufferSize      uint32
+	SampleSize               int
+	SeedNodes                []string
+	StreamstoreCapacity      int
+	StreamstoreQueueSize     int
+	SyncCommandMaxBufferSize uint32
+	SyncHandler              SyncHandler
+	Timeout                  time.Duration
+	VerificationHandler      VerificationHandler
+	Version                  string
+	WitnessCacheSize         int
 }
 
 // Get the default configuration parameters.
@@ -81,27 +82,28 @@ func DefaultConfig() *Config {
 		DisableNATPortMap:       false,
 		DisablePeerDiscovery:    false,
 		DisableStreamDiscovery:  false,
-		IP:                   "0.0.0.0",
-		KBucketSize:          16,
-		LatencyTolerance:     time.Minute,
-		NATMonitorInterval:   time.Second,
-		NATMonitorTimeout:    time.Minute,
-		Network:              "revolver",
-		Port:                 0,
-		ProcessID:            0,
-		ProofHandler:         DefaultProofHandler,
-		ProofMaxBufferSize:   32,
-		RandomSeed:           "",
-		SampleMaxBufferSize:  8192,
-		SampleSize:           4,
-		SeedNodes:            nil,
-		SpammerCacheSize:     16384,
-		StreamstoreCapacity:  8,
-		StreamstoreQueueSize: 8192,
-		Timeout:              10 * time.Second,
-		VerificationHandler:  DefaultVerificationHandler,
-		Version:              "0.1.0",
-		WitnessCacheSize:     65536,
+		IP:                       "0.0.0.0",
+		KBucketSize:              16,
+		LatencyTolerance:         time.Minute,
+		NATMonitorInterval:       time.Second,
+		NATMonitorTimeout:        time.Minute,
+		Network:                  "revolver",
+		Port:                     0,
+		ProcessID:                0,
+		ProofHandler:             DefaultProofHandler,
+		ProofMaxBufferSize:       32,
+		RandomSeed:               "",
+		SampleMaxBufferSize:      8192,
+		SampleSize:               4,
+		SeedNodes:                nil,
+		StreamstoreCapacity:      8,
+		StreamstoreQueueSize:     8192,
+		SyncCommandMaxBufferSize: 32,
+		SyncHandler:              DefaultSyncHandler,
+		Timeout:                  10 * time.Second,
+		VerificationHandler:      DefaultVerificationHandler,
+		Version:                  "0.1.0",
+		WitnessCacheSize:         65536,
 	}
 }
 
