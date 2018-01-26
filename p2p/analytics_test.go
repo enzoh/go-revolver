@@ -17,14 +17,14 @@ import (
 
 	"gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
 
-	"github.com/dfinity/go-revolver/analytics"
+	"github.com/dfinity/go-revolver/report"
 )
 
 // Show that clients can report their streams to an analytics server.
 func TestAnalytics(test *testing.T) {
 
 	// Create a simple key-value store for analytics reports.
-	reports := make(map[string]*analytics.Report)
+	reports := make(map[string]*report.Report)
 	lock := &sync.Mutex{}
 
 	// Create a TCP listener to be used by the analytics server.
@@ -35,8 +35,8 @@ func TestAnalytics(test *testing.T) {
 	defer listener.Close()
 
 	// Start the analytics server on a separate thread.
-	go func(reports map[string]*analytics.Report, lock *sync.Mutex, listener net.Listener) {
-		http.HandleFunc("/report", analytics.ReportHandler(reports, lock))
+	go func(reports map[string]*report.Report, lock *sync.Mutex, listener net.Listener) {
+		http.HandleFunc("/report", report.ReportHandler(reports, lock))
 		http.Serve(listener, nil)
 	}(reports, lock, listener)
 

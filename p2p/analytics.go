@@ -11,7 +11,7 @@ package p2p
 import (
 	"time"
 
-	"github.com/dfinity/go-revolver/analytics"
+	"github.com/dfinity/go-revolver/report"
 )
 
 // Share analytics with core developers.
@@ -53,10 +53,10 @@ func (client *client) activateAnalytics() func() {
 }
 
 // Generate an analytics report.
-func (client *client) genReport() *analytics.Report {
+func (client *client) genReport() *report.Report {
 
 	// Create a report.
-	report := analytics.Report{
+	report := report.Report{
 		ClusterID: client.config.ClusterID,
 		Network:   string(client.config.Network),
 		NodeID:    client.id.Pretty(),

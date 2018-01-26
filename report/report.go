@@ -1,15 +1,15 @@
 /**
  * File        : report.go
- * Description : Analytics reporting module.
+ * Description : Common analytics report type and related functions.
  * Copyright   : Copyright (c) 2017-2018 DFINITY Stiftung. All rights reserved.
  * Maintainer  : Enzo Haussecker <enzo@dfinity.org>
  * Stability   : Stable
  *
- * This module provides common types and functions used by both the client and
- * the network topology inspector.
+ * This module provides a common analytics report type and related functions
+ * used by both the client and the network topology inspector.
  */
 
-package analytics
+package report
 
 import (
 	"bytes"
